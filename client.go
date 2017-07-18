@@ -3,6 +3,7 @@ package ams
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -157,17 +159,21 @@ func (c *Client) newRequest(ctx context.Context, method, spath string, body io.R
 	if err != nil {
 		return nil, err
 	}
+	c.setupHeader(req)
 	req.Header.Set("Content-Type", requestMIMEtype)
 	req.Header.Set("Accept", requestMIMEtype)
-	req.Header.Set("x-ms-version", msVersion)
 	req.Header.Set("DataServiceVersion", dataServiceVersion)
 	req.Header.Set("MaxDataServiceVersion", maxDataServiceVersion)
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Authorization", fmt.Sprintf("%s %s", c.credentials.TokenType, c.credentials.AccessToken))
 
 	req = req.WithContext(ctx)
 
 	return req, nil
+}
+
+func (c *Client) setupHeader(req *http.Request) {
+	req.Header.Set("x-ms-version", msVersion)
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Authorization", fmt.Sprintf("%s %s", c.credentials.TokenType, c.credentials.AccessToken))
 }
 
 func (c *Client) Auth() error {
@@ -312,7 +318,40 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 	return &out, nil
 }
 
+func (c *Client) PutBlobWithContext(ctx context.Context, locator *Locator, file *os.File) error {
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	uploadURL, err := url.ParseRequestURI(locator.Path)
+	if err != nil {
+		return err
+	}
+	uploadURL.Path = path.Join(uploadURL.Path, fileInfo.Name())
+	query := uploadURL.Query()
+	query.Add("comp", "block")
+	query.Add("blockid", buildBlockID(1))
+
+	req, err := http.NewRequest(http.MethodPut, uploadURL.String(), file)
+	if err != nil {
+		return err
+	}
+	c.setupHeader(req)
+	req.Header.Set("x-ms-version", "2017-04-17")
+	req.Header.Set("x-ms-blob-type", "BlockBlob")
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set("Content-Length", fmt.Sprint(fileInfo.Size()))
+
+	return nil
+}
+
 // API:
+
+func buildBlockID(blockID int) string {
+	s := fmt.Sprintf("BlockId%07d", blockID)
+	return base64.StdEncoding.EncodeToString([]byte(s))
+}
 
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
 	resp, err := c.httpClient.Do(req)
