@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"path"
@@ -307,7 +308,7 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 	if err != nil {
 		return nil, err
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, "AccessPolicies", body)
+	req, err := c.newRequest(ctx, http.MethodPost, "Locators", body)
 	if err != nil {
 		return nil, err
 	}
@@ -316,6 +317,10 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 		return nil, err
 	}
 	return &out, nil
+}
+
+func (c *Client) PutBlob(locator *Locator, file *os.File) error {
+	return c.PutBlobWithContext(context.Background(), locator, file)
 }
 
 func (c *Client) PutBlobWithContext(ctx context.Context, locator *Locator, file *os.File) error {
@@ -332,28 +337,75 @@ func (c *Client) PutBlobWithContext(ctx context.Context, locator *Locator, file 
 	query := uploadURL.Query()
 	query.Add("comp", "block")
 	query.Add("blockid", buildBlockID(1))
+	uploadURL.RawQuery = query.Encode()
 
 	req, err := http.NewRequest(http.MethodPut, uploadURL.String(), file)
 	if err != nil {
 		return err
 	}
 	c.setupHeader(req)
+	req.Header.Del("Authorization")
 	req.Header.Set("x-ms-version", "2017-04-17")
 	req.Header.Set("x-ms-blob-type", "BlockBlob")
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
-	req.Header.Set("Content-Length", fmt.Sprint(fileInfo.Size()))
+	req.ContentLength = fileInfo.Size()
 
-	return nil
+	return c.do(req, http.StatusCreated, nil)
+}
+
+func (c *Client) UpdateAssetFile(assetFile *AssetFile) error {
+	return c.UpdateAssetFileWithContext(context.Background(), assetFile)
+}
+
+func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *AssetFile) error {
+	endpoint := fmt.Sprintf("Files('%s')", url.PathEscape(assetFile.ID))
+	body, err := json.Marshal(assetFile)
+	if err != nil {
+		return err
+	}
+	req, err := c.newRequest(ctx, "MERGE", endpoint, bytes.NewReader(body))
+
+	if err != nil {
+		return err
+	}
+	return c.do(req, http.StatusNoContent, nil)
+}
+
+func (c *Client) DeleteLocator(locator *Locator) error {
+	return c.DeleteLocatorWithContext(context.Background(), locator)
+}
+
+func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator) error {
+	endpoint := fmt.Sprintf("Locators('%s')", url.PathEscape(locator.ID))
+	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	return c.do(req, http.StatusNoContent, nil)
+}
+
+func (c *Client) DeleteAccessPolicy(accessPolicy *AccessPolicy) error {
+	return c.DeleteAccessPolicyWithContext(context.Background(), accessPolicy)
+}
+
+func (c *Client) DeleteAccessPolicyWithContext(ctx context.Context, accessPolicy *AccessPolicy) error {
+	endpoint := fmt.Sprintf("AccessPolicies('%s')", url.PathEscape(accessPolicy.ID))
+	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	return c.do(req, http.StatusNoContent, nil)
 }
 
 // API:
 
-func buildBlockID(blockID int) string {
-	s := fmt.Sprintf("BlockId%07d", blockID)
-	return base64.StdEncoding.EncodeToString([]byte(s))
-}
-
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
+	info, err := httputil.DumpRequestOut(req, false)
+	if err != nil {
+		return err
+	}
+	c.logger.Printf("[DEBUG]\n\n%s\n", string(info))
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -363,12 +415,19 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	if err := assertStatusCode(resp, expectedCode); err != nil {
 		return err
 	}
-	r := io.TeeReader(resp.Body, os.Stdout)
-	decoder := json.NewDecoder(r)
-	if err := decoder.Decode(out); err != nil {
-		return err
+	if out != nil {
+		r := io.TeeReader(resp.Body, os.Stdout)
+		decoder := json.NewDecoder(r)
+		if err := decoder.Decode(out); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func buildBlockID(blockID int) string {
+	s := fmt.Sprintf("BlockId%07d", blockID)
+	return base64.StdEncoding.EncodeToString([]byte(s))
 }
 
 func encodeParams(params map[string]interface{}) (io.Reader, error) {
