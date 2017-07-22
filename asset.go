@@ -3,6 +3,8 @@ package ams
 import (
 	"context"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type AssetOption int

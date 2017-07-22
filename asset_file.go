@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/pkg/errors"
 )
 
 type AssetFile struct {
@@ -35,16 +37,16 @@ func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, 
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create asset file parameter encode failed")
 	}
 
 	req, err := c.newRequest(ctx, http.MethodPost, "Files", body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create asset file request build failed")
 	}
 	var out AssetFile
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create asset file request failed")
 	}
 	return &out, nil
 }
@@ -54,15 +56,18 @@ func (c *Client) UpdateAssetFile(assetFile *AssetFile) error {
 }
 
 func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *AssetFile) error {
-	endpoint := fmt.Sprintf("Files('%s')", url.PathEscape(assetFile.ID))
+	endpoint := fmt.Sprintf("Files('%s')", assetFile.ID)
 	body, err := json.Marshal(assetFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "asset file marshal failed")
 	}
-	req, err := c.newRequest(ctx, "MERGE", endpoint, bytes.NewReader(body))
 
+	req, err := c.newRequest(ctx, "MERGE", endpoint, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "update asset file request build failed")
 	}
-	return c.do(req, http.StatusNoContent, nil)
+
+	if err := c.do(req, http.StatusNoContent, nil); err != nil {
+		return errors.Wrap(err, "update asset file request failed")
+	}
 }

@@ -48,6 +48,8 @@ type Client struct {
 	logger *log.Logger
 
 	credentials Credentials
+
+	debug bool
 }
 
 type Credentials struct {
@@ -60,7 +62,7 @@ type Credentials struct {
 	TokenType    string `json:"token_type"`
 }
 
-func NewClient(restAPIEndpoint, tenantDomain, clientID, clientSecret string, logger *log.Logger) (*Client, error) {
+func NewClient(apiEndpoint, tenantDomain, clientID, clientSecret string, logger *log.Logger) (*Client, error) {
 	if len(tenantDomain) == 0 {
 		return nil, errors.New("missing tenantDomain")
 	}
@@ -74,9 +76,9 @@ func NewClient(restAPIEndpoint, tenantDomain, clientID, clientSecret string, log
 		logger = log.New(ioutil.Discard, "", log.LstdFlags)
 	}
 
-	parsedURL, err := url.ParseRequestURI(restAPIEndpoint)
+	parsedURL, err := url.ParseRequestURI(apiEndpoint)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "url parse failed: %s", apiEndpoint)
 	}
 
 	return &Client{
@@ -86,19 +88,24 @@ func NewClient(restAPIEndpoint, tenantDomain, clientID, clientSecret string, log
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		logger:       logger,
+		debug:        false,
 	}, nil
+}
+
+func (c *Client) SetDebug(debug bool) {
+	c.debug = debug
 }
 
 func (c *Client) newRequest(ctx context.Context, method, spath string, body io.Reader) (*http.Request, error) {
 	if len(c.credentials.AccessToken) == 0 {
-		return nil, errors.New("Unauthorized, please call Auth()")
+		return nil, errors.New("no access token")
 	}
 	u := *c.URL
 	u.Path = path.Join(c.URL.Path, spath)
 
 	req, err := http.NewRequest(method, u.String(), body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	c.setDefaultHeader(req)
 	req.Header.Set("Content-Type", requestMIMEType)
@@ -129,43 +136,49 @@ func (c *Client) Auth() error {
 
 	req, err := http.NewRequest(http.MethodPost, authURL, body)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "auth request build failed")
 	}
 	req.Header.Set("User-Agent", userAgent)
 
 	if err := c.do(req, http.StatusOK, &c.credentials); err != nil {
-		return err
+		return errors.Wrap(err, "auth request failed")
 	}
 	return nil
 }
 
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
-	reqDump, err := httputil.DumpRequestOut(req, false)
-	if err != nil {
-		return err
+	if c.debug {
+		reqDump, err := httputil.DumpRequestOut(req, false)
+		if err != nil {
+			return errors.Wrap(err, "request dump failed")
+		}
+		c.logger.Printf("[DEBUG]\n%s\n", string(reqDump))
 	}
-	c.logger.Printf("[DEBUG]\n\n%s\n", string(reqDump))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "request failed")
 	}
 	defer resp.Body.Close()
 
 	if err := assertStatusCode(resp, expectedCode); err != nil {
 		return err
 	}
+
 	if out != nil {
 		decoder := json.NewDecoder(resp.Body)
 		if err := decoder.Decode(out); err != nil {
-			return err
+			return errors.Wrap(err, "response decode failed")
 		}
 	}
-	respDump, err := httputil.DumpResponse(resp, false)
-	if err != nil {
-		return err
+
+	if c.debug {
+		respDump, err := httputil.DumpResponse(resp, false)
+		if err != nil {
+			return errors.Wrap(err, "response dump failed")
+		}
+		c.logger.Printf("[DEBUG]\n%s\n", string(respDump))
 	}
-	c.logger.Printf("[DEBUG]\n\n%s\n", string(respDump))
 
 	return nil
 }
@@ -173,7 +186,7 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 func encodeParams(params map[string]interface{}) (io.Reader, error) {
 	encoded, err := json.Marshal(params)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parameter encoding failed")
 	}
 	reader := bytes.NewReader(encoded)
 	return reader, nil

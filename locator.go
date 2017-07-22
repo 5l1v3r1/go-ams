@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"github.com/pkg/errors"
 )
 
 type Locator struct {
@@ -24,7 +25,7 @@ type Locator struct {
 func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 	uploadURL, err := url.ParseRequestURI(l.Path)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "parse url failed: %s", l.Path)
 	}
 	uploadURL.Path = path.Join(uploadURL.Path, name)
 	return uploadURL, nil
@@ -43,15 +44,15 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "create locator parameter encode failed")
 	}
 	req, err := c.newRequest(ctx, http.MethodPost, "Locators", body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create locator request build failed")
 	}
 	var out Locator
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create locator request failed")
 	}
 	return &out, nil
 }
@@ -61,10 +62,13 @@ func (c *Client) DeleteLocator(locator *Locator) error {
 }
 
 func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator) error {
-	endpoint := fmt.Sprintf("Locators('%s')", url.PathEscape(locator.ID))
+	endpoint := fmt.Sprintf("Locators('%s')", locator.ID)
 	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, nil)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "delete locator request build failed")
 	}
-	return c.do(req, http.StatusNoContent, nil)
+	if err := c.do(req, http.StatusNoContent, nil); err != nil {
+		return errors.Wrap(err, "delete locator request failed")
+	}
+	return nil
 }
