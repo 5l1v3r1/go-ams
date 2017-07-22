@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
+
+	"github.com/pkg/errors"
 )
 
 type AccessPolicy struct {
@@ -28,15 +29,15 @@ func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name, durati
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create access-policy parameter encode failed")
 	}
 	req, err := c.newRequest(ctx, http.MethodPost, "AccessPolicies", body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create access-policy request build failed")
 	}
 	var out AccessPolicy
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create access-policy request failed")
 	}
 	return &out, nil
 }
@@ -46,10 +47,13 @@ func (c *Client) DeleteAccessPolicy(accessPolicy *AccessPolicy) error {
 }
 
 func (c *Client) DeleteAccessPolicyWithContext(ctx context.Context, accessPolicy *AccessPolicy) error {
-	endpoint := fmt.Sprintf("AccessPolicies('%s')", url.PathEscape(accessPolicy.ID))
+	endpoint := fmt.Sprintf("AccessPolicies('%s')", accessPolicy.ID)
 	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, nil)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "delete access-policy request build failed")
 	}
-	return c.do(req, http.StatusNoContent, nil)
+	if err := c.do(req, http.StatusNoContent, nil); err != nil {
+		return errors.Wrap(err, "delete access-policy request failed")
+	}
+	return nil
 }

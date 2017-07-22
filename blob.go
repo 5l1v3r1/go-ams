@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func setStorageDefaultHeader(req *http.Request) {
@@ -24,7 +26,7 @@ func (c *Client) PutBlob(uploadURL *url.URL, file *os.File) ([]int, error) {
 func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "uploading file stat read failed")
 	}
 
 	u := *uploadURL
@@ -35,7 +37,7 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 
 	req, err := http.NewRequest(http.MethodPut, u.String(), file)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "put blob request build failed")
 	}
 	setStorageDefaultHeader(req)
 	req.Header.Set("x-ms-blob-type", "BlockBlob")
@@ -43,7 +45,7 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 	req.ContentLength = fileInfo.Size()
 
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "put blob request failed")
 	}
 	return []int{1}, nil
 }
@@ -63,12 +65,15 @@ func (c *Client) PutBlockListWithContext(ctx context.Context, uploadURL *url.URL
 
 	req, err := http.NewRequest(http.MethodPut, u.String(), body)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "put block list request build failed")
 	}
 	setStorageDefaultHeader(req)
 	req.ContentLength = int64(len(blockListXML))
 
-	return c.do(req, http.StatusCreated, nil)
+	if err := c.do(req, http.StatusCreated, nil); err != nil {
+		return errors.Wrap(err, "put block list request failed")
+	}
+	return nil
 }
 
 func buildBlockID(blockID int) string {
