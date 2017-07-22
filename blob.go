@@ -74,6 +74,7 @@ func (c *Client) PutBlockListWithContext(ctx context.Context, uploadURL *url.URL
 		return errors.Wrap(err, "put block list request failed")
 	}
 
+	return nil
 }
 
 func buildBlockID(blockID int) string {

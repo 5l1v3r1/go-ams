@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/pkg/errors"
 )
@@ -70,4 +69,6 @@ func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *Asse
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
 		return errors.Wrap(err, "update asset file request failed")
 	}
+
+	return nil
 }
