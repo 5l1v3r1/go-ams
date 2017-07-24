@@ -170,6 +170,12 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	return nil
 }
 
+func (c *Client) buildURI(spath string) string {
+	u := *c.URL
+	u.Path = path.Join(u.Path, spath)
+	return u.String()
+}
+
 func encodeParams(params map[string]interface{}) (io.Reader, error) {
 	encoded, err := json.Marshal(params)
 	if err != nil {
@@ -181,7 +187,11 @@ func encodeParams(params map[string]interface{}) (io.Reader, error) {
 
 func assertStatusCode(resp *http.Response, expected int) error {
 	if resp.StatusCode != expected {
-		return errors.Errorf("unexpected status code, expected = %d. actual = %s %s", expected, resp.Status, resp.Request.URL.String())
+		dumped, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return errors.Errorf("unexpected status code, expected = %d, actual = %s %s:%s", expected, resp.Status, resp.Request.URL.String(), err.Error())
+		}
+		return errors.Errorf("unexpected status code, expected = %d. actual = %s\n%s", expected, resp.Status, string(dumped))
 	}
 	return nil
 }

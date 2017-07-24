@@ -2,6 +2,7 @@ package ams
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -24,6 +25,27 @@ type Asset struct {
 	FormatOption       int    `json:"FormatOption"`
 	URI                string `json:"Uri"`
 	StorageAccountName string `json:"StorageAccountName"`
+}
+
+func (a *Asset) toResource() string {
+	return fmt.Sprintf("Assets('%s')", a.ID)
+}
+
+func (c *Client) GetAsset(assetID string) (*Asset, error) {
+	return c.GetAssetWithContext(context.Background(), assetID)
+}
+
+func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asset, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("Assets('%s')", assetID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var out Asset
+	if err := c.do(req, http.StatusOK, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func (c *Client) GetAssets() ([]Asset, error) {
@@ -65,4 +87,8 @@ func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asse
 		return nil, err
 	}
 	return &out, nil
+}
+
+func (c *Client) buildAssetURI(asset *Asset) string {
+	return c.buildURI(asset.toResource())
 }
