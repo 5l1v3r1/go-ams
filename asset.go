@@ -11,10 +11,10 @@ import (
 type AssetOption int
 
 const (
-	OptionNone                        = 0
-	OptionStorageEncrypted            = 1
-	OptionCommonEncryptionProtected   = 2
-	OptionEnvelopeEncryptionProtected = 4
+	OptionStorageEncrypted = 1 << iota
+	OptionCommonEncryptionProtected
+	OptionEnvelopeEncryptionProtected
+	OptionNone = 0
 )
 
 type Asset struct {
@@ -77,6 +77,21 @@ func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asse
 		return nil, errors.Wrap(err, "create asset request failed")
 	}
 	return &out, nil
+}
+
+func (c *Client) GetAssetFilesWithContext(ctx context.Context, asset *Asset) ([]AssetFile, error) {
+	endpoint := asset.toResource() + "/Files"
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "get asset files request build failed")
+	}
+	var out struct {
+		AssetFiles []AssetFile `json:"value"`
+	}
+	if err := c.do(req, http.StatusOK, &out); err != nil {
+		return nil, errors.Wrap(err, "get asset files request failed")
+	}
+	return out.AssetFiles, nil
 }
 
 func (c *Client) buildAssetURI(asset *Asset) string {
