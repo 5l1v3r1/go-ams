@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -32,11 +33,11 @@ func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 	return uploadURL, nil
 }
 
-func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, assetID, startTime string, locatorType int) (*Locator, error) {
+func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, assetID string, startTime time.Time, locatorType int) (*Locator, error) {
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
 		"AssetId":        assetID,
-		"StartTime":      startTime,
+		"StartTime":      startTime.UTC().Format(time.RFC3339),
 		"Type":           locatorType,
 	}
 	body, err := encodeParams(params)
