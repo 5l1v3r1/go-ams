@@ -152,7 +152,8 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 		if err != nil {
 			return errors.Wrap(err, "request dump failed")
 		}
-		c.logger.Printf("[DEBUG]\n%s", string(reqDump))
+		c.logger.Printf("[DEBUG] url = %s", req.URL.String())
+		c.logger.Printf("[DEBUG] request header\n%s", string(reqDump))
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -161,25 +162,38 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	}
 	defer resp.Body.Close()
 
-	if err := assertStatusCode(resp, expectedCode); err != nil {
-		return err
-	}
-
-	if out != nil {
-		decoder := json.NewDecoder(resp.Body)
-		if err := decoder.Decode(out); err != nil {
-			return errors.Wrap(err, "response decode failed")
-		}
-	}
+	var body io.Reader
+	body = resp.Body
 
 	if c.debug {
 		respDump, err := httputil.DumpResponse(resp, false)
 		if err != nil {
 			return errors.Wrap(err, "response dump failed")
 		}
-		c.logger.Printf("[DEBUG]\n%s", string(respDump))
-		if out != nil {
-			c.logger.Printf("[DEBUG] parsed body: %#v", out)
+		c.logger.Printf("[DEBUG] url = %s", req.URL.String())
+		c.logger.Printf("[DEBUG] response header\n%s", string(respDump))
+
+		var b bytes.Buffer
+		if _, err := b.ReadFrom(body); err != nil {
+			return errors.Wrap(err, "response body read failed")
+		}
+		c.logger.Printf("[DEBUG] body\n%s", b.String())
+
+		body = &b
+	}
+
+	if err := assertStatusCode(resp, expectedCode); err != nil {
+		return err
+	}
+
+	if out != nil {
+		decoder := json.NewDecoder(body)
+		if err := decoder.Decode(out); err != nil {
+			return errors.Wrap(err, "response decode failed")
+		}
+
+		if c.debug {
+			c.logger.Printf("[DEBUG] parsed body\n%#v", out)
 		}
 	}
 
@@ -203,7 +217,7 @@ func encodeParams(params map[string]interface{}) (io.Reader, error) {
 
 func assertStatusCode(resp *http.Response, expected int) error {
 	if resp.StatusCode != expected {
-		return errors.Errorf("unexpected status code, expected = %d, actual = %s %s", expected, resp.Status, resp.Request.URL.String())
+		return errors.Errorf("unexpected status code, expected = %d, actual = %s <= %s", expected, resp.Status, resp.Request.URL.String())
 	}
 	return nil
 }
