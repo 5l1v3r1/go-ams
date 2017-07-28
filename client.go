@@ -152,7 +152,7 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 		if err != nil {
 			return errors.Wrap(err, "request dump failed")
 		}
-		c.logger.Printf("[DEBUG]\n%s\n", string(reqDump))
+		c.logger.Printf("[DEBUG]\n%s", string(reqDump))
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -177,7 +177,10 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 		if err != nil {
 			return errors.Wrap(err, "response dump failed")
 		}
-		c.logger.Printf("[DEBUG]\n%s\n", string(respDump))
+		c.logger.Printf("[DEBUG]\n%s", string(respDump))
+		if out != nil {
+			c.logger.Printf("[DEBUG] parsed body: %#v", out)
+		}
 	}
 
 	return nil
@@ -200,11 +203,7 @@ func encodeParams(params map[string]interface{}) (io.Reader, error) {
 
 func assertStatusCode(resp *http.Response, expected int) error {
 	if resp.StatusCode != expected {
-		dumped, err := httputil.DumpResponse(resp, true)
-		if err != nil {
-			return errors.Errorf("unexpected status code, expected = %d, actual = %s %s:%s", expected, resp.Status, resp.Request.URL.String(), err.Error())
-		}
-		return errors.Errorf("unexpected status code, expected = %d. actual = %s\n%s", expected, resp.Status, string(dumped))
+		return errors.Errorf("unexpected status code, expected = %d, actual = %s %s", expected, resp.Status, resp.Request.URL.String())
 	}
 	return nil
 }
