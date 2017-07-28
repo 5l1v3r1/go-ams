@@ -8,6 +8,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	PermissionRead = 1 << iota
+	PermissionWrite
+	PermissionDelete
+	PermissionList
+	PermissionNone = 0
+)
+
+const (
+	LocatorNone = iota
+	LocatorSAS
+	LocatorOnDemandOrigin
+)
+
 type AccessPolicy struct {
 	ID                string  `json:"Id"`
 	Created           string  `json:"Created"`
@@ -17,7 +31,7 @@ type AccessPolicy struct {
 	Permissions       int     `json:"Permissions"`
 }
 
-func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name, durationInMinutes float64, permissions int) (*AccessPolicy, error) {
+func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name string, durationInMinutes float64, permissions int) (*AccessPolicy, error) {
 	params := map[string]interface{}{
 		"Name":              name,
 		"DurationInMinutes": durationInMinutes,
