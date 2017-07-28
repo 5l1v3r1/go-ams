@@ -17,11 +17,7 @@ type AccessPolicy struct {
 	Permissions       int     `json:"Permissions"`
 }
 
-func (c *Client) CreateAccessPolicy(name, durationInMinutes, permissions string) (*AccessPolicy, error) {
-	return c.CreateAccessPolicyWithContext(context.Background(), name, durationInMinutes, permissions)
-}
-
-func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name, durationInMinutes, permissions string) (*AccessPolicy, error) {
+func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name, durationInMinutes float64, permissions int) (*AccessPolicy, error) {
 	params := map[string]interface{}{
 		"Name":              name,
 		"DurationInMinutes": durationInMinutes,
@@ -40,10 +36,6 @@ func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name, durati
 		return nil, errors.Wrap(err, "create access-policy request failed")
 	}
 	return &out, nil
-}
-
-func (c *Client) DeleteAccessPolicy(accessPolicy *AccessPolicy) error {
-	return c.DeleteAccessPolicyWithContext(context.Background(), accessPolicy)
 }
 
 func (c *Client) DeleteAccessPolicyWithContext(ctx context.Context, accessPolicy *AccessPolicy) error {

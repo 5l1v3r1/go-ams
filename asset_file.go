@@ -22,10 +22,6 @@ type AssetFile struct {
 	ContentChecksum string `json:"ContentChecksum"`
 }
 
-func (c *Client) CreateAssetFile(assetID, name, mimeType string) (*AssetFile, error) {
-	return c.CreateAssetFileWithContext(context.Background(), assetID, name, mimeType)
-}
-
 func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, mimeType string) (*AssetFile, error) {
 	params := map[string]interface{}{
 		"IsEncrypted":   "false",
@@ -48,10 +44,6 @@ func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, 
 		return nil, errors.Wrap(err, "create asset file request failed")
 	}
 	return &out, nil
-}
-
-func (c *Client) UpdateAssetFile(assetFile *AssetFile) error {
-	return c.UpdateAssetFileWithContext(context.Background(), assetFile)
 }
 
 func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *AssetFile) error {

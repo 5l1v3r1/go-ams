@@ -33,10 +33,6 @@ func (a *Asset) toResource() string {
 	return fmt.Sprintf("Assets('%s')", a.ID)
 }
 
-func (c *Client) GetAsset(assetID string) (*Asset, error) {
-	return c.GetAssetWithContext(context.Background(), assetID)
-}
-
 func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asset, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("Assets('%s')", assetID), nil)
 	if err != nil {
@@ -48,10 +44,6 @@ func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asse
 		return nil, err
 	}
 	return &out, nil
-}
-
-func (c *Client) GetAssets() ([]Asset, error) {
-	return c.GetAssetsWithContext(context.Background())
 }
 
 func (c *Client) GetAssetsWithContext(ctx context.Context) ([]Asset, error) {
@@ -66,10 +58,6 @@ func (c *Client) GetAssetsWithContext(ctx context.Context) ([]Asset, error) {
 		return nil, errors.Wrap(err, "get assets request failed")
 	}
 	return out.Assets, nil
-}
-
-func (c *Client) CreateAsset(name string) (*Asset, error) {
-	return c.CreateAssetWithContext(context.Background(), name)
 }
 
 func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asset, error) {

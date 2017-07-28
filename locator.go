@@ -32,10 +32,6 @@ func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 	return uploadURL, nil
 }
 
-func (c *Client) CreateLocator(accessPolicyID, assetID, startTime string, locatorType int) (*Locator, error) {
-	return c.CreateLocatorWithContext(context.Background(), accessPolicyID, assetID, startTime, locatorType)
-}
-
 func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, assetID, startTime string, locatorType int) (*Locator, error) {
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
@@ -56,10 +52,6 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 		return nil, errors.Wrap(err, "create locator request failed")
 	}
 	return &out, nil
-}
-
-func (c *Client) DeleteLocator(locator *Locator) error {
-	return c.DeleteLocatorWithContext(context.Background(), locator)
 }
 
 func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator) error {

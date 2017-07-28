@@ -19,10 +19,6 @@ func setStorageDefaultHeader(req *http.Request) {
 	req.Header.Set("x-ms-version", "2017-04-17")
 }
 
-func (c *Client) PutBlob(uploadURL *url.URL, file *os.File) ([]int, error) {
-	return c.PutBlobWithContext(context.Background(), uploadURL, file)
-}
-
 func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -48,10 +44,6 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 		return nil, errors.Wrap(err, "put blob request failed")
 	}
 	return []int{1}, nil
-}
-
-func (c *Client) PutBlockList(uploadURL *url.URL, blockList []int) error {
-	return c.PutBlockListWithContext(context.Background(), uploadURL, blockList)
 }
 
 func (c *Client) PutBlockListWithContext(ctx context.Context, uploadURL *url.URL, blockList []int) error {

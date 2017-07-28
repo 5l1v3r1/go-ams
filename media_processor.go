@@ -14,10 +14,6 @@ type MediaProcessor struct {
 	Version     string `json:"Version"`
 }
 
-func (c *Client) GetMediaProcessors() ([]MediaProcessor, error) {
-	return c.GetMediaProcessorsWithContext(context.Background())
-}
-
 func (c *Client) GetMediaProcessorsWithContext(ctx context.Context) ([]MediaProcessor, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, "MediaProcessors", nil)
 	if err != nil {

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+
+	"github.com/pkg/errors"
+	"time"
 )
 
 type MetaData struct {
@@ -45,18 +48,14 @@ type Task struct {
 }
 
 type Job struct {
-	ID              string `json:"Id"`
-	Name            string `json:"Name"`
-	StartTime       string `json:"StartTime"`
-	EndTime         string `json:"EndTime"`
-	LastModified    string `json:"LastModified"`
-	Priority        int    `json:"Priority"`
-	RunningDuration int    `json:"RunningDuration"`
-	State           int    `json:"State"`
-}
-
-func (c *Client) EncodeAsset(mediaProcessorID, configuration string, asset *Asset) (*Job, error) {
-	return c.EncodeAssetWithContext(context.Background(), mediaProcessorID, configuration, asset)
+	ID              string  `json:"Id"`
+	Name            string  `json:"Name"`
+	StartTime       string  `json:"StartTime"`
+	EndTime         string  `json:"EndTime"`
+	LastModified    string  `json:"LastModified"`
+	Priority        int     `json:"Priority"`
+	RunningDuration float64 `json:"RunningDuration"`
+	State           int     `json:"State"`
 }
 
 func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, configuration string, asset *Asset) (*Job, error) {
@@ -92,10 +91,6 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 	return &out.Data, nil
 }
 
-func (c *Client) GetJob(jobID string) (*Job, error) {
-	return c.GetJobWithContext(context.Background(), jobID)
-}
-
 func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("Jobs('%s')", jobID), nil)
 	if err != nil {
@@ -108,14 +103,23 @@ func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, err
 	return &out, nil
 }
 
-func (c *Client) WaitJob(job *Job) error {
-	return c.WaitJobWithContext(context.Background(), job)
-}
-
 func (c *Client) WaitJobWithContext(ctx context.Context, job *Job) error {
-	current, err := c.GetJobWithContext(ctx, job.ID)
-	if err != nil {
-		return err
+	for {
+		current, err := c.GetJobWithContext(ctx, job.ID)
+		if err != nil {
+			return err
+		}
+
+		if current.State == JobError {
+			return errors.New("job failed")
+		}
+		if current.State == JobCanceled {
+			return errors.New("job canceled")
+		}
+		if current.State == JobFinished {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
