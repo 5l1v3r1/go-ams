@@ -58,8 +58,13 @@ type Job struct {
 	State           int     `json:"State"`
 }
 
+func (j *Job) toResource() string {
+	return fmt.Sprintf("Jobs('%s')", j.ID)
+}
+
 func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, configuration string, asset *Asset) (*Job, error) {
-	destAssetName := fmt.Sprintf("[ENCODED]%s", asset.Name)
+	outAssetName := fmt.Sprintf("[ENCODED]%s", asset.Name)
+
 	params := map[string]interface{}{
 		"Name": fmt.Sprintf("EncodeJob - %s", asset.ID),
 		"InputMediaAssets": []MediaAsset{
@@ -67,10 +72,10 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 		},
 		"Tasks": []Task{
 			Task{
-				Name:             fmt.Sprintf("task-%s", destAssetName),
+				Name:             fmt.Sprintf("task-%s", outAssetName),
 				Configuration:    configuration,
 				MediaProcessorID: mediaProcessorID,
-				TaskBody:         buildTaskBody(destAssetName),
+				TaskBody:         buildTaskBody(outAssetName),
 			},
 		},
 	}
@@ -89,6 +94,21 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 		return nil, err
 	}
 	return &out.Data, nil
+}
+
+func (c *Client) GetOutputMediaAssetsWithContext(ctx context.Context, job *Job) ([]Asset, error) {
+	endpoint := job.toResource() + "/OutputMediaAssets"
+	req, err := c.newRequest(ctx, "GET", endpoint, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "get output media assets request build failed")
+	}
+	var out struct {
+		Assets []Asset `json:"value"`
+	}
+	if err := c.do(req, http.StatusOK, &out); err != nil {
+		return nil, errors.Wrap(err, "get output media assets request failed")
+	}
+	return out.Assets, nil
 }
 
 func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, error) {
@@ -119,7 +139,7 @@ func (c *Client) WaitJobWithContext(ctx context.Context, job *Job) error {
 		if current.State == JobFinished {
 			return nil
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(8 * time.Second)
 	}
 }
 
