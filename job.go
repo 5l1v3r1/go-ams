@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
-	"time"
 )
 
 type MetaData struct {
