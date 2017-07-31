@@ -1,13 +1,14 @@
 package ams
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,7 +34,7 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 
 	req, err := http.NewRequest(http.MethodPut, u.String(), file)
 	if err != nil {
-		return nil, errors.Wrap(err, "put blob request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	setStorageDefaultHeader(req)
 	req.Header.Set("x-ms-blob-type", "BlockBlob")
@@ -41,7 +42,7 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 	req.ContentLength = fileInfo.Size()
 
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
-		return nil, errors.Wrap(err, "put blob request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return []int{1}, nil
 }
@@ -52,34 +53,39 @@ func (c *Client) PutBlockListWithContext(ctx context.Context, uploadURL *url.URL
 	query.Add("comp", "blocklist")
 	u.RawQuery = query.Encode()
 
-	blockListXML := buildBlockListXML(blockList)
-	body := strings.NewReader(blockListXML)
-
+	blockListXML, err := BuildBlockListXML(blockList)
+	if err != nil {
+		return errors.Wrap(err, "block list XML build failed")
+	}
+	body := bytes.NewReader(blockListXML)
 	req, err := http.NewRequest(http.MethodPut, u.String(), body)
 	if err != nil {
-		return errors.Wrap(err, "put block list request build failed")
+		return errors.Wrap(err, "request build failed")
 	}
 	setStorageDefaultHeader(req)
 	req.ContentLength = int64(len(blockListXML))
 
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
-		return errors.Wrap(err, "put block list request failed")
+		return errors.Wrap(err, "request failed")
 	}
 
 	return nil
 }
+
+var blockListXML *template.Template = template.Must(
+	template.New("blockListXML").Funcs(template.FuncMap{
+		"buildBlockID": buildBlockID,
+	}).Parse(`<?xml version="1.0" encoding="utf-8"?><BlockList>{{ range . }}<Latest>{{ . | buildBlockID }}</Latest>{{ end }}</BlockList>`))
 
 func buildBlockID(blockID int) string {
 	s := fmt.Sprintf("BlockId%07d", blockID)
 	return base64.StdEncoding.EncodeToString([]byte(s))
 }
 
-func buildBlockListXML(blockList []int) string {
-	header := "<?xml version=\"1.0\" encoding=\"utf-8\"?><BlockList>"
-	footer := "</BlockList>"
-	body := ""
-	for _, blockID := range blockList {
-		body += fmt.Sprintf("<Latest>%s</Latest>", buildBlockID(blockID))
+func BuildBlockListXML(blockList []int) ([]byte, error) {
+	var b bytes.Buffer
+	if err := blockListXML.Execute(&b, blockList); err != nil {
+		return nil, errors.Wrap(err, "template execute failed")
 	}
-	return header + body + footer
+	return b.Bytes(), nil
 }

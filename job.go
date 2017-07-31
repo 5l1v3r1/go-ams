@@ -10,16 +10,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-type MetaData struct {
-	URI string `json:"uri"`
-}
-
-type MediaAsset struct {
-	MetaData MetaData `json:"__metadata"`
-}
-
 const (
 	taskBodyTemplate = "<?xml version=\"1.0\" encoding=\"utf-8\"?><taskBody><inputAsset>JobInputAsset(0)</inputAsset><outputAsset assetName=\"%s\">JobOutputAsset(0)</outputAsset></taskBody>"
+)
+
+const (
+	jobsEndpoint = "Jobs"
 )
 
 const (
@@ -31,6 +27,14 @@ const (
 	JobCanceled
 	JobCanceling
 )
+
+type MetaData struct {
+	URI string `json:"uri"`
+}
+
+type MediaAsset struct {
+	MetaData MetaData `json:"__metadata"`
+}
 
 func NewMediaAsset(uri string) MediaAsset {
 	return MediaAsset{
@@ -59,7 +63,7 @@ type Job struct {
 }
 
 func (j *Job) toResource() string {
-	return fmt.Sprintf("Jobs('%s')", j.ID)
+	return toResource(jobsEndpoint, j.ID)
 }
 
 func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, configuration string, asset *Asset) (*Job, error) {
@@ -81,9 +85,14 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "encode params failed")
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, "Jobs", body)
+
+	req, err := c.newRequest(ctx, http.MethodPost, jobsEndpoint, body)
+	if err != nil {
+		return nil, errors.Wrap(err, "request build failed")
+	}
+
 	req.Header.Set("Content-Type", "application/json;odata=verbose")
 	req.Header.Set("Accept", "application/json;odata=verbose")
 
@@ -91,34 +100,35 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 		Data Job `json:"d"`
 	}
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return &out.Data, nil
 }
 
 func (c *Client) GetOutputMediaAssetsWithContext(ctx context.Context, job *Job) ([]Asset, error) {
 	endpoint := job.toResource() + "/OutputMediaAssets"
-	req, err := c.newRequest(ctx, "GET", endpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "get output media assets request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, errors.Wrap(err, "get output media assets request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return out.Assets, nil
 }
 
 func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("Jobs('%s')", jobID), nil)
+	endpoint := toResource(jobsEndpoint, jobID)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out Job
 	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return &out, nil
 }

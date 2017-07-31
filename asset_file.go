@@ -2,7 +2,6 @@ package ams
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -25,7 +24,7 @@ type AssetFile struct {
 }
 
 func (a *AssetFile) toResource() string {
-	return fmt.Sprintf("%s('%s')", filesEndpoint, a.ID)
+	return toResource(filesEndpoint, a.ID)
 }
 
 func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, mimeType string) (*AssetFile, error) {
@@ -38,16 +37,16 @@ func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, 
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "create asset file parameter encode failed")
+		return nil, errors.Wrap(err, "parameter encode failed")
 	}
 
 	req, err := c.newRequest(ctx, http.MethodPost, filesEndpoint, body)
 	if err != nil {
-		return nil, errors.Wrap(err, "create asset file request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out AssetFile
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "create asset file request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return &out, nil
 }
@@ -58,11 +57,11 @@ func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *Asse
 
 	req, err := c.newRequest(ctx, "MERGE", endpoint, body)
 	if err != nil {
-		return errors.Wrap(err, "update asset file request build failed")
+		return errors.Wrap(err, "request build failed")
 	}
 
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
-		return errors.Wrap(err, "update asset file request failed")
+		return errors.Wrap(err, "request failed")
 	}
 
 	return nil

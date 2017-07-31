@@ -2,13 +2,16 @@ package ams
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	locatorsEndpoint = "Locators"
 )
 
 type Locator struct {
@@ -33,6 +36,10 @@ func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 	return uploadURL, nil
 }
 
+func (l *Locator) toResource() string {
+	return toResource(locatorsEndpoint, l.ID)
+}
+
 func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, assetID string, startTime time.Time, locatorType int) (*Locator, error) {
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
@@ -42,27 +49,27 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, errors.Wrapf(err, "create locator parameter encode failed")
+		return nil, errors.Wrapf(err, "parameter encode failed")
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, "Locators", body)
+	req, err := c.newRequest(ctx, http.MethodPost, locatorsEndpoint, body)
 	if err != nil {
-		return nil, errors.Wrap(err, "create locator request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out Locator
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "create locator request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return &out, nil
 }
 
 func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator) error {
-	endpoint := fmt.Sprintf("Locators('%s')", locator.ID)
+	endpoint := locator.toResource()
 	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, nil)
 	if err != nil {
-		return errors.Wrap(err, "delete locator request build failed")
+		return errors.Wrap(err, "request build failed")
 	}
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
-		return errors.Wrap(err, "delete locator request failed")
+		return errors.Wrap(err, "request failed")
 	}
 	return nil
 }

@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+const (
+	mediaProcessorsEndpoint = "MediaProcessors"
+)
+
 type MediaProcessor struct {
 	ID          string `json:"Id"`
 	Name        string `json:"Name"`
@@ -15,7 +19,7 @@ type MediaProcessor struct {
 }
 
 func (c *Client) GetMediaProcessorsWithContext(ctx context.Context) ([]MediaProcessor, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, "MediaProcessors", nil)
+	req, err := c.newRequest(ctx, http.MethodGet, mediaProcessorsEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}

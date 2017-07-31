@@ -2,13 +2,16 @@ package ams
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
 )
 
 type AssetOption int
+
+const (
+	assetsEndpoint = "Assets"
+)
 
 const (
 	OptionStorageEncrypted = 1 << iota
@@ -30,32 +33,33 @@ type Asset struct {
 }
 
 func (a *Asset) toResource() string {
-	return fmt.Sprintf("Assets('%s')", a.ID)
+	return toResource(assetsEndpoint, a.ID)
 }
 
 func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asset, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("Assets('%s')", assetID), nil)
+	endpoint := toResource(assetsEndpoint, assetID)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "request build failed")
 	}
 
 	var out Asset
 	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return &out, nil
 }
 
 func (c *Client) GetAssetsWithContext(ctx context.Context) ([]Asset, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, "Assets", nil)
+	req, err := c.newRequest(ctx, http.MethodGet, assetsEndpoint, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "get assets request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, errors.Wrap(err, "get assets request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return out.Assets, nil
 }
@@ -66,15 +70,15 @@ func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asse
 	}
 	body, err := encodeParams(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "create asset request parameter encode failed")
+		return nil, errors.Wrap(err, "request parameter encode failed")
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, "Assets", body)
+	req, err := c.newRequest(ctx, http.MethodPost, assetsEndpoint, body)
 	if err != nil {
-		return nil, errors.Wrap(err, "create asset request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out Asset
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "create asset request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return &out, nil
 }
@@ -83,13 +87,13 @@ func (c *Client) GetAssetFilesWithContext(ctx context.Context, asset *Asset) ([]
 	endpoint := asset.toResource() + "/Files"
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "get asset files request build failed")
+		return nil, errors.Wrap(err, "request build failed")
 	}
 	var out struct {
 		AssetFiles []AssetFile `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, errors.Wrap(err, "get asset files request failed")
+		return nil, errors.Wrap(err, "request failed")
 	}
 	return out.AssetFiles, nil
 }
