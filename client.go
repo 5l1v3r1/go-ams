@@ -206,7 +206,7 @@ func (c *Client) buildURI(spath string) string {
 	return u.String()
 }
 
-func encodeParams(params map[string]interface{}) (io.Reader, error) {
+func encodeParams(params interface{}) (io.Reader, error) {
 	encoded, err := json.Marshal(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "parameter encoding failed")
