@@ -23,7 +23,8 @@ const (
 	resource                = "https://rest.media.azure.net"
 	grantType               = "client_credentials"
 	version                 = "0.1.0"
-	amsAPIVersion           = "2.15"
+	apiVersion              = "2.15"
+	storageAPIVersion       = "2017-04-17"
 	dataServiceVersion      = "3.0"
 	maxDataServiceVersion   = "3.0"
 	requestMIMEType         = "application/json"
@@ -31,12 +32,7 @@ const (
 )
 
 var (
-	userAgent = fmt.Sprintf("Go/%s (%s-%s) go-ams/%s",
-		runtime.Version(),
-		runtime.GOARCH,
-		runtime.GOOS,
-		version,
-	)
+	userAgent = fmt.Sprintf("Go/%s (%s-%s) go-ams/%s", runtime.Version(), runtime.GOARCH, runtime.GOOS, version)
 )
 
 type Client struct {
@@ -51,20 +47,6 @@ type Client struct {
 	credentials Credentials
 
 	debug bool
-}
-
-type Credentials struct {
-	AccessToken  string `json:"access_token"`
-	ExpiresIn    string `json:"expires_in"`
-	ExpiresOn    string `json:"expires_on"`
-	ExtExpiresIn string `json:"ext_expires_in"`
-	NotBefore    string `json:"not_before"`
-	Resource     string `json:"resource"`
-	TokenType    string `json:"token_type"`
-}
-
-func (c *Credentials) Token() string {
-	return fmt.Sprintf("%s %s", c.TokenType, c.AccessToken)
 }
 
 func NewClient(apiEndpoint, tenantDomain, clientID, clientSecret string, logger *log.Logger) (*Client, error) {
@@ -124,7 +106,7 @@ func (c *Client) newRequest(ctx context.Context, method, spath string, body io.R
 }
 
 func (c *Client) setDefaultHeader(req *http.Request) {
-	req.Header.Set("x-ms-version", amsAPIVersion)
+	req.Header.Set("x-ms-version", apiVersion)
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Authorization", c.credentials.Token())
 }
@@ -141,12 +123,12 @@ func (c *Client) Auth() error {
 
 	req, err := http.NewRequest(http.MethodPost, authURL, body)
 	if err != nil {
-		return errors.Wrap(err, "auth request build failed")
+		return errors.Wrap(err, "request build failed")
 	}
 	req.Header.Set("User-Agent", userAgent)
 
 	if err := c.do(req, http.StatusOK, &c.credentials); err != nil {
-		return errors.Wrap(err, "auth request failed")
+		return errors.Wrap(err, "request failed")
 	}
 	return nil
 }
@@ -209,24 +191,4 @@ func (c *Client) buildURI(spath string) string {
 	u := *c.URL
 	u.Path = path.Join(u.Path, spath)
 	return u.String()
-}
-
-func encodeParams(params interface{}) (io.Reader, error) {
-	encoded, err := json.Marshal(params)
-	if err != nil {
-		return nil, errors.Wrap(err, "json marshal failed")
-	}
-	reader := bytes.NewReader(encoded)
-	return reader, nil
-}
-
-func assertStatusCode(resp *http.Response, expected int) error {
-	if resp.StatusCode != expected {
-		return errors.Errorf("unexpected status code, expected = %d, actual = %s <= %s", expected, resp.Status, resp.Request.URL.String())
-	}
-	return nil
-}
-
-func toResource(name, id string) string {
-	return fmt.Sprintf("%s('%s')", name, id)
 }

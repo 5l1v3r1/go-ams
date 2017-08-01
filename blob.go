@@ -17,7 +17,7 @@ import (
 func setStorageDefaultHeader(req *http.Request) {
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
-	req.Header.Set("x-ms-version", "2017-04-17")
+	req.Header.Set("x-ms-version", storageAPIVersion)
 }
 
 func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
