@@ -110,7 +110,7 @@ func (c *Client) newRequest(ctx context.Context, method, spath string, opts ...r
 	return req, nil
 }
 
-func (c *Client) Auth() error {
+func (c *Client) Auth(ctx context.Context) error {
 	authURL := fmt.Sprintf(azureADAuthServerFormat, c.tenantDomain)
 	params := url.Values{
 		"grant_type":    {grantType},
@@ -118,7 +118,7 @@ func (c *Client) Auth() error {
 		"client_secret": {c.clientSecret},
 		"resource":      {resource},
 	}
-	req, err := c.newRequest(context.TODO(), http.MethodPost, "", setURL(authURL), withForm(params))
+	req, err := c.newRequest(ctx, http.MethodPost, "", setURL(authURL), withForm(params))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

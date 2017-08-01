@@ -40,7 +40,7 @@ func (l *Locator) toResource() string {
 	return toResource(locatorsEndpoint, l.ID)
 }
 
-func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, assetID string, startTime time.Time, locatorType int) (*Locator, error) {
+func (c *Client) CreateLocator(ctx context.Context, accessPolicyID, assetID string, startTime time.Time, locatorType int) (*Locator, error) {
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
 		"AssetId":        assetID,
@@ -58,8 +58,8 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 	return &out, nil
 }
 
-func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator) error {
-	endpoint := locator.toResource()
+func (c *Client) DeleteLocator(ctx context.Context, locatorID string) error {
+	endpoint := toLocatorResource(locatorID)
 	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, useAMS(c))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
@@ -68,4 +68,8 @@ func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator)
 		return errors.Wrap(err, "request failed")
 	}
 	return nil
+}
+
+func toLocatorResource(locatorID string) string {
+	return toResource(locatorsEndpoint, locatorID)
 }

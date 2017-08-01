@@ -34,11 +34,7 @@ type AccessPolicy struct {
 	Permissions       int     `json:"Permissions"`
 }
 
-func (a *AccessPolicy) toResource() string {
-	return toResource(accessPoliciesEndpoint, a.ID)
-}
-
-func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name string, durationInMinutes float64, permissions int) (*AccessPolicy, error) {
+func (c *Client) CreateAccessPolicy(ctx context.Context, name string, durationInMinutes float64, permissions int) (*AccessPolicy, error) {
 	params := map[string]interface{}{
 		"Name":              name,
 		"DurationInMinutes": durationInMinutes,
@@ -55,8 +51,9 @@ func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name string,
 	return &out, nil
 }
 
-func (c *Client) DeleteAccessPolicyWithContext(ctx context.Context, accessPolicy *AccessPolicy) error {
-	req, err := c.newRequest(ctx, http.MethodDelete, accessPolicy.toResource(), useAMS(c))
+func (c *Client) DeleteAccessPolicy(ctx context.Context, accessPolicyID string) error {
+	endpoint := toAccessPolicyResource(accessPolicyID)
+	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, useAMS(c))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
@@ -64,4 +61,8 @@ func (c *Client) DeleteAccessPolicyWithContext(ctx context.Context, accessPolicy
 		return errors.Wrap(err, "request failed")
 	}
 	return nil
+}
+
+func toAccessPolicyResource(accessPolicyID string) string {
+	return toResource(accessPoliciesEndpoint, accessPolicyID)
 }

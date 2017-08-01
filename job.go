@@ -62,24 +62,23 @@ type Job struct {
 	State           int     `json:"State"`
 }
 
-func (j *Job) toResource() string {
-	return toResource(jobsEndpoint, j.ID)
-}
-
-func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, configuration string, asset *Asset) (*Job, error) {
-	outAssetName := fmt.Sprintf("[ENCODED]%s", asset.Name)
+func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, mediaProcessorID, configuration string) (*Job, error) {
+	jobName := fmt.Sprintf("EncodeJob#%s", assetID)
+	assetURI := c.buildAssetURI(assetID)
+	taskName := fmt.Sprintf("Task#%s", outputAssetName)
+	taskBody := buildTaskBody(outputAssetName)
 
 	params := map[string]interface{}{
-		"Name": fmt.Sprintf("EncodeJob - %s", asset.ID),
+		"Name": jobName,
 		"InputMediaAssets": []MediaAsset{
-			NewMediaAsset(c.buildAssetURI(asset)),
+			NewMediaAsset(assetURI),
 		},
 		"Tasks": []Task{
-			Task{
-				Name:             fmt.Sprintf("task-%s", outAssetName),
+			{
+				Name:             taskName,
 				Configuration:    configuration,
 				MediaProcessorID: mediaProcessorID,
-				TaskBody:         buildTaskBody(outAssetName),
+				TaskBody:         taskBody,
 			},
 		},
 	}
@@ -96,8 +95,8 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 	return &out.Data, nil
 }
 
-func (c *Client) GetOutputMediaAssetsWithContext(ctx context.Context, job *Job) ([]Asset, error) {
-	endpoint := job.toResource() + "/OutputMediaAssets"
+func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asset, error) {
+	endpoint := toJobResource(jobID) + "/OutputMediaAssets"
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
@@ -111,8 +110,8 @@ func (c *Client) GetOutputMediaAssetsWithContext(ctx context.Context, job *Job) 
 	return out.Assets, nil
 }
 
-func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, error) {
-	endpoint := toResource(jobsEndpoint, jobID)
+func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
+	endpoint := toJobResource(jobID)
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
@@ -124,9 +123,9 @@ func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, err
 	return &out, nil
 }
 
-func (c *Client) WaitJobWithContext(ctx context.Context, job *Job) error {
+func (c *Client) WaitJob(ctx context.Context, jobID string) error {
 	for {
-		current, err := c.GetJobWithContext(ctx, job.ID)
+		current, err := c.GetJob(ctx, jobID)
 		if err != nil {
 			return err
 		}
@@ -146,4 +145,8 @@ func (c *Client) WaitJobWithContext(ctx context.Context, job *Job) error {
 
 func buildTaskBody(assetName string) string {
 	return fmt.Sprintf(taskBodyTemplate, html.EscapeString(assetName))
+}
+
+func toJobResource(jobID string) string {
+	return toResource(jobsEndpoint, jobID)
 }

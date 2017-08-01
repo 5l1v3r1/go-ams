@@ -23,11 +23,7 @@ type AssetFile struct {
 	ContentChecksum string `json:"ContentChecksum"`
 }
 
-func (a *AssetFile) toResource() string {
-	return toResource(filesEndpoint, a.ID)
-}
-
-func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, mimeType string) (*AssetFile, error) {
+func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType string) (*AssetFile, error) {
 	params := map[string]interface{}{
 		"IsEncrypted":   false,
 		"IsPrimary":     false,
@@ -46,8 +42,8 @@ func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, 
 	return &out, nil
 }
 
-func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *AssetFile) error {
-	endpoint := assetFile.toResource()
+func (c *Client) UpdateAssetFile(ctx context.Context, assetFile *AssetFile) error {
+	endpoint := toFileResource(assetFile.ID)
 	req, err := c.newRequest(ctx, "MERGE", endpoint, useAMS(c), withJSON(assetFile))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
@@ -58,4 +54,8 @@ func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *Asse
 	}
 
 	return nil
+}
+
+func toFileResource(assetFileID string) string {
+	return toResource(filesEndpoint, assetFileID)
 }

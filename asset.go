@@ -32,12 +32,8 @@ type Asset struct {
 	StorageAccountName string `json:"StorageAccountName"`
 }
 
-func (a *Asset) toResource() string {
-	return toResource(assetsEndpoint, a.ID)
-}
-
-func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asset, error) {
-	endpoint := toResource(assetsEndpoint, assetID)
+func (c *Client) GetAsset(ctx context.Context, assetID string) (*Asset, error) {
+	endpoint := toAssetResource(assetID)
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
@@ -50,7 +46,7 @@ func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asse
 	return &out, nil
 }
 
-func (c *Client) GetAssetsWithContext(ctx context.Context) ([]Asset, error) {
+func (c *Client) GetAssets(ctx context.Context) ([]Asset, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, assetsEndpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
@@ -64,7 +60,7 @@ func (c *Client) GetAssetsWithContext(ctx context.Context) ([]Asset, error) {
 	return out.Assets, nil
 }
 
-func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asset, error) {
+func (c *Client) CreateAsset(ctx context.Context, name string) (*Asset, error) {
 	params := map[string]interface{}{
 		"Name": name,
 	}
@@ -79,8 +75,8 @@ func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asse
 	return &out, nil
 }
 
-func (c *Client) GetAssetFilesWithContext(ctx context.Context, asset *Asset) ([]AssetFile, error) {
-	endpoint := asset.toResource() + "/Files"
+func (c *Client) GetAssetFiles(ctx context.Context, assetID string) ([]AssetFile, error) {
+	endpoint := toAssetResource(assetID) + "/Files"
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
@@ -94,6 +90,10 @@ func (c *Client) GetAssetFilesWithContext(ctx context.Context, asset *Asset) ([]
 	return out.AssetFiles, nil
 }
 
-func (c *Client) buildAssetURI(asset *Asset) string {
-	return c.buildURI(asset.toResource())
+func toAssetResource(assetID string) string {
+	return toResource(assetsEndpoint, assetID)
+}
+
+func (c *Client) buildAssetURI(assetID string) string {
+	return c.buildURI(toResource(assetsEndpoint, assetID))
 }

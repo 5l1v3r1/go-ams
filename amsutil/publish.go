@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/recruit-tech/go-ams"
 )
@@ -15,7 +17,7 @@ const (
 	publishDurationInMinute = 43200
 )
 
-func Publish(client *ams.Client, assetID string) (string, error) {
+func Publish(ctx context.Context, client *ams.Client, assetID string) (string, error) {
 	if client == nil {
 		return "", errors.New("missing client")
 	}
@@ -23,35 +25,35 @@ func Publish(client *ams.Client, assetID string) (string, error) {
 		return "", errors.New("missing assetID")
 	}
 
-	asset, err := client.GetAsset(assetID)
+	asset, err := client.GetAsset(ctx, assetID)
 	if err != nil {
 		return "", errors.Wrapf(err, "get asset failed. assetID='%s'", assetID)
 	}
 
 	success := false
 
-	accessPolicy, err := client.CreateAccessPolicy(publishAccessPolicyName, publishDurationInMinute, ams.PermissionRead)
+	accessPolicy, err := client.CreateAccessPolicy(ctx, publishAccessPolicyName, publishDurationInMinute, ams.PermissionRead)
 	if err != nil {
 		return "", errors.Wrap(err, "create access policy failed")
 	}
 	defer func() {
 		if !success {
-			client.DeleteAccessPolicy(accessPolicy)
+			client.DeleteAccessPolicy(ctx, accessPolicy.ID)
 		}
 	}()
 
 	startTime := time.Now().Add(-5 * time.Minute)
-	locator, err := client.CreateLocator(accessPolicy.ID, asset.ID, startTime, ams.LocatorOnDemandOrigin)
+	locator, err := client.CreateLocator(ctx, accessPolicy.ID, asset.ID, startTime, ams.LocatorOnDemandOrigin)
 	if err != nil {
 		return "", errors.Wrap(err, "create locator failed")
 	}
 	defer func() {
 		if !success {
-			client.DeleteLocator(locator)
+			client.DeleteLocator(ctx, locator.ID)
 		}
 	}()
 
-	assetFiles, err := client.GetAssetFiles(asset)
+	assetFiles, err := client.GetAssetFiles(ctx, asset.ID)
 	if err != nil {
 		return "", errors.Wrap(err, "get asset files failed")
 	}

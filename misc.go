@@ -1,23 +1,11 @@
 package ams
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/pkg/errors"
 )
-
-func encodeParams(params interface{}) (io.Reader, error) {
-	encoded, err := json.Marshal(params)
-	if err != nil {
-		return nil, errors.Wrap(err, "json marshal failed")
-	}
-	reader := bytes.NewReader(encoded)
-	return reader, nil
-}
 
 func assertStatusCode(resp *http.Response, expected int) error {
 	if resp.StatusCode != expected {

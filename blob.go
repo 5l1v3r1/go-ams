@@ -13,13 +13,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
+func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
 		return nil, errors.Wrap(err, "uploading file stat read failed")
 	}
 	params := url.Values{
-		"comp": {"block"},
+		"comp":    {"block"},
 		"blockid": {buildBlockID(1)},
 	}
 	req, err := c.newRequest(ctx, http.MethodPut, "",
@@ -40,7 +40,7 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 	return []int{1}, nil
 }
 
-func (c *Client) PutBlockListWithContext(ctx context.Context, uploadURL *url.URL, blockList []int) error {
+func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList []int) error {
 	params := url.Values{
 		"comp": {"blocklist"},
 	}
