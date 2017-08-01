@@ -23,10 +23,11 @@ const (
 	resource                = "https://rest.media.azure.net"
 	grantType               = "client_credentials"
 	version                 = "0.1.0"
-	msVersion               = "2.15"
+	amsAPIVersion           = "2.15"
 	dataServiceVersion      = "3.0"
 	maxDataServiceVersion   = "3.0"
 	requestMIMEType         = "application/json"
+	responseMIMEType        = "application/json"
 )
 
 var (
@@ -60,6 +61,10 @@ type Credentials struct {
 	NotBefore    string `json:"not_before"`
 	Resource     string `json:"resource"`
 	TokenType    string `json:"token_type"`
+}
+
+func (c *Credentials) Token() string {
+	return fmt.Sprintf("%s %s", c.TokenType, c.AccessToken)
 }
 
 func NewClient(apiEndpoint, tenantDomain, clientID, clientSecret string, logger *log.Logger) (*Client, error) {
@@ -119,9 +124,9 @@ func (c *Client) newRequest(ctx context.Context, method, spath string, body io.R
 }
 
 func (c *Client) setDefaultHeader(req *http.Request) {
-	req.Header.Set("x-ms-version", msVersion)
+	req.Header.Set("x-ms-version", amsAPIVersion)
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Authorization", fmt.Sprintf("%s %s", c.credentials.TokenType, c.credentials.AccessToken))
+	req.Header.Set("Authorization", c.credentials.Token())
 }
 
 func (c *Client) Auth() error {
