@@ -1,12 +1,11 @@
 package amsutil
 
 import (
+	"context"
 	"net/url"
 	"path"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/pkg/errors"
 	"github.com/recruit-tech/go-ams"
