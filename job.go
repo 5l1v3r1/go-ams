@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	taskBodyTemplate = "<?xml version=\"1.0\" encoding=\"utf-8\"?><taskBody><inputAsset>JobInputAsset(0)</inputAsset><outputAsset assetName=\"%s\">JobOutputAsset(0)</outputAsset></taskBody>"
+	taskBodyTemplate = `<?xml version="1.0" encoding="utf-8"?><taskBody><inputAsset>JobInputAsset(0)</inputAsset><outputAsset assetName="%s">JobOutputAsset(0)</outputAsset></taskBody>`
 )
 
 const (
