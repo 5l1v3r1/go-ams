@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"path"
 	"runtime"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -83,50 +82,46 @@ func (c *Client) SetDebug(debug bool) {
 	c.debug = debug
 }
 
-func (c *Client) newRequest(ctx context.Context, method, spath string, body io.Reader) (*http.Request, error) {
-	if len(c.credentials.AccessToken) == 0 {
-		return nil, errors.New("no access token")
+func (c *Client) newRequest(ctx context.Context, method, spath string, opts ...requestOption) (*http.Request, error) {
+	option := defaultRequestOption(c)
+	if err := composeOptions(opts...)(option); err != nil {
+		return nil, errors.Wrap(err, "option apply failed")
 	}
-	u := *c.URL
-	u.Path = path.Join(c.URL.Path, spath)
 
-	req, err := http.NewRequest(method, u.String(), body)
+	u := option.BaseURL
+	u.Path = path.Join(u.Path, spath)
+	if len(option.Params) != 0 {
+		q := u.Query()
+		for k, vs := range option.Params {
+			for _, v := range vs {
+				q.Add(k, v)
+			}
+		}
+		u.RawQuery = q.Encode()
+	}
+
+	req, err := http.NewRequest(method, u.String(), option.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
-	c.setDefaultHeader(req)
-	req.Header.Set("Content-Type", requestMIMEType)
-	req.Header.Set("Accept", requestMIMEType)
-	req.Header.Set("DataServiceVersion", dataServiceVersion)
-	req.Header.Set("MaxDataServiceVersion", maxDataServiceVersion)
+	req.Header = option.Header
 
 	req = req.WithContext(ctx)
-
 	return req, nil
-}
-
-func (c *Client) setDefaultHeader(req *http.Request) {
-	req.Header.Set("x-ms-version", apiVersion)
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Authorization", c.credentials.Token())
 }
 
 func (c *Client) Auth() error {
 	authURL := fmt.Sprintf(azureADAuthServerFormat, c.tenantDomain)
-
-	params := url.Values{}
-	params.Add("grant_type", grantType)
-	params.Add("client_id", c.clientID)
-	params.Add("client_secret", c.clientSecret)
-	params.Add("resource", resource)
-	body := strings.NewReader(params.Encode())
-
-	req, err := http.NewRequest(http.MethodPost, authURL, body)
+	params := url.Values{
+		"grant_type":    {grantType},
+		"client_id":     {c.clientID},
+		"client_secret": {c.clientSecret},
+		"resource":      {resource},
+	}
+	req, err := c.newRequest(context.TODO(), http.MethodPost, "", setURL(authURL), withForm(params))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
-	req.Header.Set("User-Agent", userAgent)
-
 	if err := c.do(req, http.StatusOK, &c.credentials); err != nil {
 		return errors.Wrap(err, "request failed")
 	}

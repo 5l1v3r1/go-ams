@@ -35,12 +35,7 @@ func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, 
 		"Name":          name,
 		"ParentAssetId": assetID,
 	}
-	body, err := encodeParams(params)
-	if err != nil {
-		return nil, errors.Wrap(err, "parameter encode failed")
-	}
-
-	req, err := c.newRequest(ctx, http.MethodPost, filesEndpoint, body)
+	req, err := c.newRequest(ctx, http.MethodPost, filesEndpoint, useAMS(c), withJSON(params))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -53,9 +48,7 @@ func (c *Client) CreateAssetFileWithContext(ctx context.Context, assetID, name, 
 
 func (c *Client) UpdateAssetFileWithContext(ctx context.Context, assetFile *AssetFile) error {
 	endpoint := assetFile.toResource()
-	body, err := encodeParams(assetFile)
-
-	req, err := c.newRequest(ctx, "MERGE", endpoint, body)
+	req, err := c.newRequest(ctx, "MERGE", endpoint, useAMS(c), withJSON(assetFile))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

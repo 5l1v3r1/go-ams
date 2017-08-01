@@ -83,19 +83,10 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 			},
 		},
 	}
-	body, err := encodeParams(params)
-	if err != nil {
-		return nil, errors.Wrap(err, "encode params failed")
-	}
-
-	req, err := c.newRequest(ctx, http.MethodPost, jobsEndpoint, body)
+	req, err := c.newRequest(ctx, http.MethodPost, jobsEndpoint, useAMS(c), withJSON(params), withOData(true))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
-
-	req.Header.Set("Content-Type", "application/json;odata=verbose")
-	req.Header.Set("Accept", "application/json;odata=verbose")
-
 	var out struct {
 		Data Job `json:"d"`
 	}
@@ -107,7 +98,7 @@ func (c *Client) EncodeAssetWithContext(ctx context.Context, mediaProcessorID, c
 
 func (c *Client) GetOutputMediaAssetsWithContext(ctx context.Context, job *Job) ([]Asset, error) {
 	endpoint := job.toResource() + "/OutputMediaAssets"
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -122,7 +113,7 @@ func (c *Client) GetOutputMediaAssetsWithContext(ctx context.Context, job *Job) 
 
 func (c *Client) GetJobWithContext(ctx context.Context, jobID string) (*Job, error) {
 	endpoint := toResource(jobsEndpoint, jobID)
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}

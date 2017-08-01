@@ -44,11 +44,7 @@ func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name string,
 		"DurationInMinutes": durationInMinutes,
 		"Permissions":       permissions,
 	}
-	body, err := encodeParams(params)
-	if err != nil {
-		return nil, errors.Wrap(err, "parameter encode failed")
-	}
-	req, err := c.newRequest(ctx, http.MethodPost, accessPoliciesEndpoint, body)
+	req, err := c.newRequest(ctx, http.MethodPost, accessPoliciesEndpoint, useAMS(c), withJSON(params))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -60,7 +56,7 @@ func (c *Client) CreateAccessPolicyWithContext(ctx context.Context, name string,
 }
 
 func (c *Client) DeleteAccessPolicyWithContext(ctx context.Context, accessPolicy *AccessPolicy) error {
-	req, err := c.newRequest(ctx, http.MethodDelete, accessPolicy.toResource(), nil)
+	req, err := c.newRequest(ctx, http.MethodDelete, accessPolicy.toResource(), useAMS(c))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

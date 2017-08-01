@@ -38,7 +38,7 @@ func (a *Asset) toResource() string {
 
 func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asset, error) {
 	endpoint := toResource(assetsEndpoint, assetID)
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -51,7 +51,7 @@ func (c *Client) GetAssetWithContext(ctx context.Context, assetID string) (*Asse
 }
 
 func (c *Client) GetAssetsWithContext(ctx context.Context) ([]Asset, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, assetsEndpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, assetsEndpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -68,11 +68,7 @@ func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asse
 	params := map[string]interface{}{
 		"Name": name,
 	}
-	body, err := encodeParams(params)
-	if err != nil {
-		return nil, errors.Wrap(err, "request parameter encode failed")
-	}
-	req, err := c.newRequest(ctx, http.MethodPost, assetsEndpoint, body)
+	req, err := c.newRequest(ctx, http.MethodPost, assetsEndpoint, useAMS(c), withJSON(params))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -85,7 +81,7 @@ func (c *Client) CreateAssetWithContext(ctx context.Context, name string) (*Asse
 
 func (c *Client) GetAssetFilesWithContext(ctx context.Context, asset *Asset) ([]AssetFile, error) {
 	endpoint := asset.toResource() + "/Files"
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}

@@ -19,7 +19,7 @@ type MediaProcessor struct {
 }
 
 func (c *Client) GetMediaProcessorsWithContext(ctx context.Context) ([]MediaProcessor, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, mediaProcessorsEndpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, mediaProcessorsEndpoint, useAMS(c))
 	if err != nil {
 		return nil, err
 	}

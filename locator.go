@@ -47,11 +47,7 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 		"StartTime":      startTime.UTC().Format(time.RFC3339),
 		"Type":           locatorType,
 	}
-	body, err := encodeParams(params)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parameter encode failed")
-	}
-	req, err := c.newRequest(ctx, http.MethodPost, locatorsEndpoint, body)
+	req, err := c.newRequest(ctx, http.MethodPost, locatorsEndpoint, useAMS(c), withJSON(params))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -64,7 +60,7 @@ func (c *Client) CreateLocatorWithContext(ctx context.Context, accessPolicyID, a
 
 func (c *Client) DeleteLocatorWithContext(ctx context.Context, locator *Locator) error {
 	endpoint := locator.toResource()
-	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, nil)
+	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, useAMS(c))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

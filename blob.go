@@ -9,38 +9,31 @@ import (
 	"net/url"
 	"os"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
 )
-
-func setStorageDefaultHeader(req *http.Request) {
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
-	req.Header.Set("x-ms-version", storageAPIVersion)
-}
 
 func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
 		return nil, errors.Wrap(err, "uploading file stat read failed")
 	}
-
-	u := *uploadURL
-	query := u.Query()
-	query.Add("comp", "block")
-	query.Add("blockid", buildBlockID(1))
-	u.RawQuery = query.Encode()
-
-	req, err := http.NewRequest(http.MethodPut, u.String(), file)
+	params := url.Values{
+		"comp": {"block"},
+		"blockid": {buildBlockID(1)},
+	}
+	req, err := c.newRequest(ctx, http.MethodPut, "",
+		setURL(uploadURL.String()),
+		useStorageAPI(),
+		withQuery(params),
+		withBlobType("BlockBlob"),
+		withContentType("application/octet-stream"),
+		withBody(file),
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
-	setStorageDefaultHeader(req)
-	req.Header.Set("x-ms-blob-type", "BlockBlob")
-	req.Header.Set("Content-Type", "application/octet-stream")
 	req.ContentLength = fileInfo.Size()
-
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
@@ -48,21 +41,22 @@ func (c *Client) PutBlobWithContext(ctx context.Context, uploadURL *url.URL, fil
 }
 
 func (c *Client) PutBlockListWithContext(ctx context.Context, uploadURL *url.URL, blockList []int) error {
-	u := *uploadURL
-	query := u.Query()
-	query.Add("comp", "blocklist")
-	u.RawQuery = query.Encode()
-
+	params := url.Values{
+		"comp": {"blocklist"},
+	}
 	blockListXML, err := BuildBlockListXML(blockList)
 	if err != nil {
 		return errors.Wrap(err, "block list XML build failed")
 	}
-	body := bytes.NewReader(blockListXML)
-	req, err := http.NewRequest(http.MethodPut, u.String(), body)
+	req, err := c.newRequest(ctx, http.MethodPut, "",
+		setURL(uploadURL.String()),
+		useStorageAPI(),
+		withQuery(params),
+		withBytes(blockListXML),
+	)
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
-	setStorageDefaultHeader(req)
 	req.ContentLength = int64(len(blockListXML))
 
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
