@@ -18,16 +18,14 @@ import (
 )
 
 const (
-	azureADAuthServerFormat = "https://login.microsoftonline.com/%s/oauth2/token"
-	resource                = "https://rest.media.azure.net"
-	grantType               = "client_credentials"
-	version                 = "0.1.0"
-	apiVersion              = "2.15"
-	storageAPIVersion       = "2017-04-17"
-	dataServiceVersion      = "3.0"
-	maxDataServiceVersion   = "3.0"
-	requestMIMEType         = "application/json"
-	responseMIMEType        = "application/json"
+	Resource              = "https://rest.media.azure.net"
+	version               = "0.1.0"
+	apiVersion            = "2.15"
+	storageAPIVersion     = "2017-04-17"
+	dataServiceVersion    = "3.0"
+	maxDataServiceVersion = "3.0"
+	requestMIMEType       = "application/json"
+	responseMIMEType      = "application/json"
 )
 
 var (
@@ -35,46 +33,29 @@ var (
 )
 
 type Client struct {
-	URL        *url.URL
+	baseURL    *url.URL
 	httpClient *http.Client
 
-	tenantDomain           string
-	clientID, clientSecret string
-
 	logger *log.Logger
-
-	credentials Credentials
 
 	debug bool
 }
 
-func NewClient(apiEndpoint, tenantDomain, clientID, clientSecret string, logger *log.Logger) (*Client, error) {
-	if len(tenantDomain) == 0 {
-		return nil, errors.New("missing tenantDomain")
-	}
-	if len(clientID) == 0 {
-		return nil, errors.New("missing clientID")
-	}
-	if len(clientSecret) == 0 {
-		return nil, errors.New("missing clientSecret")
-	}
+func NewClient(httpClient *http.Client, urlStr string, logger *log.Logger) (*Client, error) {
 	if logger == nil {
 		logger = log.New(ioutil.Discard, "", log.LstdFlags)
 	}
 
-	parsedURL, err := url.ParseRequestURI(apiEndpoint)
+	u, err := url.ParseRequestURI(urlStr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "url parse failed: %s", apiEndpoint)
+		return nil, errors.Wrapf(err, "url parse failed: %s", urlStr)
 	}
 
 	return &Client{
-		URL:          parsedURL,
-		httpClient:   http.DefaultClient,
-		tenantDomain: tenantDomain,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		logger:       logger,
-		debug:        false,
+		baseURL:    u,
+		httpClient: httpClient,
+		logger:     logger,
+		debug:      false,
 	}, nil
 }
 
@@ -108,24 +89,6 @@ func (c *Client) newRequest(ctx context.Context, method, spath string, opts ...r
 
 	req = req.WithContext(ctx)
 	return req, nil
-}
-
-func (c *Client) Auth(ctx context.Context) error {
-	authURL := fmt.Sprintf(azureADAuthServerFormat, c.tenantDomain)
-	params := url.Values{
-		"grant_type":    {grantType},
-		"client_id":     {c.clientID},
-		"client_secret": {c.clientSecret},
-		"resource":      {resource},
-	}
-	req, err := c.newRequest(ctx, http.MethodPost, "", setURL(authURL), withForm(params))
-	if err != nil {
-		return errors.Wrap(err, "request build failed")
-	}
-	if err := c.do(req, http.StatusOK, &c.credentials); err != nil {
-		return errors.Wrap(err, "request failed")
-	}
-	return nil
 }
 
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
@@ -183,7 +146,7 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 }
 
 func (c *Client) buildURI(spath string) string {
-	u := *c.URL
+	u := *c.baseURL
 	u.Path = path.Join(u.Path, spath)
 	return u.String()
 }

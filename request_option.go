@@ -38,7 +38,7 @@ func defaultRequestOption(client *Client) *requestOptions {
 		Params: url.Values{},
 	}
 
-	option.BaseURL = *client.URL
+	option.BaseURL = *client.baseURL
 	option.Header.Set("User-Agent", userAgent)
 
 	return option
@@ -46,7 +46,6 @@ func defaultRequestOption(client *Client) *requestOptions {
 
 func useAMS(client *Client) requestOption {
 	return composeOptions(
-		withAuthorization(&client.credentials),
 		withOData(false),
 		withDataServiceVersion(),
 		setAPIVersion(apiVersion),
@@ -58,13 +57,6 @@ func useStorageAPI() requestOption {
 		withDateHeader(),
 		setAPIVersion(storageAPIVersion),
 	)
-}
-
-func withAuthorization(credentials *Credentials) requestOption {
-	return func(option *requestOptions) error {
-		option.Header.Set("Authorization", credentials.Token())
-		return nil
-	}
 }
 
 func withDataServiceVersion() requestOption {
