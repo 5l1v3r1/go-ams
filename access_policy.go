@@ -40,7 +40,7 @@ func (c *Client) CreateAccessPolicy(ctx context.Context, name string, durationIn
 		"DurationInMinutes": durationInMinutes,
 		"Permissions":       permissions,
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, accessPoliciesEndpoint, useAMS(c), withJSON(params))
+	req, err := c.newRequest(ctx, http.MethodPost, accessPoliciesEndpoint, withJSON(params))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -53,7 +53,7 @@ func (c *Client) CreateAccessPolicy(ctx context.Context, name string, durationIn
 
 func (c *Client) DeleteAccessPolicy(ctx context.Context, accessPolicyID string) error {
 	endpoint := toAccessPolicyResource(accessPolicyID)
-	req, err := c.newRequest(ctx, http.MethodDelete, endpoint, useAMS(c))
+	req, err := c.newRequest(ctx, http.MethodDelete, endpoint)
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

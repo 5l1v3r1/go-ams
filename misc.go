@@ -3,6 +3,7 @@ package ams
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 )
@@ -16,4 +17,12 @@ func assertStatusCode(resp *http.Response, expected int) error {
 
 func toResource(name, id string) string {
 	return fmt.Sprintf("%s('%s')", name, id)
+}
+
+func mergeValues(a, b url.Values) {
+	for k, vs := range b {
+		for _, v := range vs {
+			a.Set(k, v)
+		}
+	}
 }

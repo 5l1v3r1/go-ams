@@ -13,10 +13,9 @@ import (
 )
 
 type requestOptions struct {
-	Body    io.Reader
-	BaseURL url.URL
-	Header  http.Header
-	Params  url.Values
+	Body   io.Reader
+	Header http.Header
+	Params url.Values
 }
 
 type requestOption func(*requestOptions) error
@@ -32,37 +31,40 @@ func composeOptions(opts ...requestOption) requestOption {
 	}
 }
 
-func defaultRequestOption(client *Client) *requestOptions {
+func defaultRequestOption() *requestOptions {
 	option := &requestOptions{
 		Header: http.Header{},
 		Params: url.Values{},
 	}
 
-	option.BaseURL = *client.baseURL
 	option.Header.Set("User-Agent", userAgent)
+	option.Header.Set("x-ms-version", apiVersion)
+	withOData(false)(option)
 
 	return option
 }
 
-func useAMS(client *Client) requestOption {
-	return composeOptions(
-		withOData(false),
-		withDataServiceVersion(),
-		setAPIVersion(apiVersion),
-	)
+func defaultStorageRequestOption() *requestOptions {
+	option := &requestOptions{
+		Header: http.Header{},
+		Params: url.Values{},
+	}
+	option.Header.Set("User-Agent", userAgent)
+	option.Header.Set("x-ms-version", storageAPIVersion)
+	option.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
+
+	return option
 }
 
-func useStorageAPI() requestOption {
-	return composeOptions(
-		withDateHeader(),
-		setAPIVersion(storageAPIVersion),
-	)
+func withDataServiceVersion(option *requestOptions) error {
+	option.Header.Set("DataServiceVersion", dataServiceVersion)
+	option.Header.Set("MaxDataServiceVersion", maxDataServiceVersion)
+	return nil
 }
 
-func withDataServiceVersion() requestOption {
+func withCustomHeader(key, value string) requestOption {
 	return func(option *requestOptions) error {
-		option.Header.Set("DataServiceVersion", dataServiceVersion)
-		option.Header.Set("MaxDataServiceVersion", maxDataServiceVersion)
+		option.Header.Set(key, value)
 		return nil
 	}
 }
@@ -110,31 +112,6 @@ func withBytes(b []byte) requestOption {
 	}
 }
 
-func setURL(rawurl string) requestOption {
-	return func(option *requestOptions) error {
-		u, err := url.ParseRequestURI(rawurl)
-		if err != nil {
-			return errors.Wrapf(err, "url parse failed: %s", rawurl)
-		}
-		option.BaseURL = *u
-		return nil
-	}
-}
-
-func withDateHeader() requestOption {
-	return func(option *requestOptions) error {
-		option.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
-		return nil
-	}
-}
-
-func withBlobType(blobType string) requestOption {
-	return func(option *requestOptions) error {
-		option.Header.Set("x-ms-blob-type", blobType)
-		return nil
-	}
-}
-
 func withContentType(mimeType string) requestOption {
 	return func(option *requestOptions) error {
 		option.Header.Set("Content-Type", mimeType)
@@ -149,19 +126,12 @@ func setAccept(mimeType string) requestOption {
 	}
 }
 
-func setAPIVersion(version string) requestOption {
-	return func(option *requestOptions) error {
-		option.Header.Set("x-ms-version", version)
-		return nil
-	}
-}
-
 func withOData(verbose bool) requestOption {
-	contentType := requestMIMEType
-	accept := responseMIMEType
+	contentType := "application/json"
+	accept := "application/json"
 	if verbose {
 		contentType += ";odata=verbose"
 		accept += ";odata=verbose"
 	}
-	return composeOptions(withContentType(contentType), setAccept(accept))
+	return composeOptions(withContentType(contentType), setAccept(accept), withDataServiceVersion)
 }

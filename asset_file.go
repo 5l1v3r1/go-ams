@@ -31,7 +31,7 @@ func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType st
 		"Name":          name,
 		"ParentAssetId": assetID,
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, filesEndpoint, useAMS(c), withJSON(params))
+	req, err := c.newRequest(ctx, http.MethodPost, filesEndpoint, withJSON(params))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -44,7 +44,7 @@ func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType st
 
 func (c *Client) UpdateAssetFile(ctx context.Context, assetFile *AssetFile) error {
 	endpoint := toFileResource(assetFile.ID)
-	req, err := c.newRequest(ctx, "MERGE", endpoint, useAMS(c), withJSON(assetFile))
+	req, err := c.newRequest(ctx, "MERGE", endpoint, withJSON(assetFile))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

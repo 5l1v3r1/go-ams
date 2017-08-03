@@ -22,11 +22,9 @@ func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, file *os.File)
 		"comp":    {"block"},
 		"blockid": {buildBlockID(1)},
 	}
-	req, err := c.newRequest(ctx, http.MethodPut, "",
-		setURL(uploadURL.String()),
-		useStorageAPI(),
+	req, err := c.newStorageRequest(ctx, http.MethodPut, *uploadURL,
 		withQuery(params),
-		withBlobType("BlockBlob"),
+		withCustomHeader("x-ms-blob-type", "BlockBlob"),
 		withContentType("application/octet-stream"),
 		withBody(file),
 	)
@@ -48,12 +46,7 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 	if err != nil {
 		return errors.Wrap(err, "block list XML build failed")
 	}
-	req, err := c.newRequest(ctx, http.MethodPut, "",
-		setURL(uploadURL.String()),
-		useStorageAPI(),
-		withQuery(params),
-		withBytes(blockListXML),
-	)
+	req, err := c.newStorageRequest(ctx, http.MethodPut, *uploadURL, withQuery(params), withBytes(blockListXML))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
@@ -67,9 +60,10 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 }
 
 var blockListXML *template.Template = template.Must(
-	template.New("blockListXML").Funcs(template.FuncMap{
-		"buildBlockID": buildBlockID,
-	}).Parse(`<?xml version="1.0" encoding="utf-8"?><BlockList>{{ range . }}<Latest>{{ . | buildBlockID }}</Latest>{{ end }}</BlockList>`))
+	template.New("blockListXML").
+		Funcs(template.FuncMap{"buildBlockID": buildBlockID}).
+		Parse(`<?xml version="1.0" encoding="utf-8"?><BlockList>{{ range . }}<Latest>{{ . | buildBlockID }}</Latest>{{ end }}</BlockList>`),
+)
 
 func buildBlockID(blockID int) string {
 	s := fmt.Sprintf("BlockId%07d", blockID)

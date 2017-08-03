@@ -15,17 +15,16 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 const (
 	Resource              = "https://rest.media.azure.net"
-	version               = "0.1.0"
+	version               = "0.2.0"
 	apiVersion            = "2.15"
 	storageAPIVersion     = "2017-04-17"
 	dataServiceVersion    = "3.0"
 	maxDataServiceVersion = "3.0"
-	requestMIMEType       = "application/json"
-	responseMIMEType      = "application/json"
 )
 
 var (
@@ -33,29 +32,29 @@ var (
 )
 
 type Client struct {
-	baseURL    *url.URL
+	baseURL     *url.URL
+	tokenSource oauth2.TokenSource
+
 	httpClient *http.Client
 
 	logger *log.Logger
-
-	debug bool
+	debug  bool
 }
 
-func NewClient(httpClient *http.Client, urlStr string, logger *log.Logger) (*Client, error) {
-	if logger == nil {
-		logger = log.New(ioutil.Discard, "", log.LstdFlags)
-	}
-
+func NewClient(urlStr string, tokenSource oauth2.TokenSource) (*Client, error) {
 	u, err := url.ParseRequestURI(urlStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "url parse failed: %s", urlStr)
 	}
-
+	defaultLogger := log.New(ioutil.Discard, "", log.LstdFlags)
 	return &Client{
-		baseURL:    u,
-		httpClient: httpClient,
-		logger:     logger,
-		debug:      false,
+		baseURL:     u,
+		tokenSource: tokenSource,
+
+		httpClient: http.DefaultClient,
+
+		logger: defaultLogger,
+		debug:  false,
 	}, nil
 }
 
@@ -63,32 +62,50 @@ func (c *Client) SetDebug(debug bool) {
 	c.debug = debug
 }
 
-func (c *Client) newRequest(ctx context.Context, method, spath string, opts ...requestOption) (*http.Request, error) {
-	option := defaultRequestOption(c)
+func (c *Client) SetLogger(logger *log.Logger) {
+	c.logger = logger
+}
+
+func (c *Client) newCommonRequest(ctx context.Context, u *url.URL, method string, option *requestOptions, opts ...requestOption) (*http.Request, error) {
 	if err := composeOptions(opts...)(option); err != nil {
 		return nil, errors.Wrap(err, "option apply failed")
 	}
-
-	u := option.BaseURL
-	u.Path = path.Join(u.Path, spath)
 	if len(option.Params) != 0 {
 		q := u.Query()
-		for k, vs := range option.Params {
-			for _, v := range vs {
-				q.Add(k, v)
-			}
-		}
+		mergeValues(q, option.Params)
 		u.RawQuery = q.Encode()
 	}
-
 	req, err := http.NewRequest(method, u.String(), option.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
+		return nil, err
 	}
 	req.Header = option.Header
-
 	req = req.WithContext(ctx)
 	return req, nil
+}
+
+func (c *Client) newRequest(ctx context.Context, method, spath string, opts ...requestOption) (*http.Request, error) {
+	option := defaultRequestOption()
+	u := *c.baseURL
+	u.Path = path.Join(u.Path, spath)
+
+	req, err := c.newCommonRequest(ctx, &u, method, option, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := c.tokenSource.Token()
+	if err != nil {
+		return nil, errors.Wrapf(err, "get access token failed")
+	}
+	token.SetAuthHeader(req)
+
+	return req, nil
+}
+
+func (c *Client) newStorageRequest(ctx context.Context, method string, u url.URL, opts ...requestOption) (*http.Request, error) {
+	option := defaultStorageRequestOption()
+	return c.newCommonRequest(ctx, &u, method, option, opts...)
 }
 
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
@@ -103,7 +120,7 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "request failed")
+		return err
 	}
 	defer resp.Body.Close()
 

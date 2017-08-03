@@ -82,7 +82,7 @@ func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, medi
 			},
 		},
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, jobsEndpoint, useAMS(c), withJSON(params), withOData(true))
+	req, err := c.newRequest(ctx, http.MethodPost, jobsEndpoint, withJSON(params), withOData(true))
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -97,7 +97,7 @@ func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, medi
 
 func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asset, error) {
 	endpoint := toJobResource(jobID) + "/OutputMediaAssets"
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -112,7 +112,7 @@ func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asse
 
 func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
 	endpoint := toJobResource(jobID)
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint, useAMS(c))
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -123,7 +123,7 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
 	return &out, nil
 }
 
-func (c *Client) WaitJob(ctx context.Context, jobID string) error {
+func (c *Client) WaitJob(ctx context.Context, jobID string, duration time.Duration) error {
 	for {
 		current, err := c.GetJob(ctx, jobID)
 		if err != nil {
@@ -139,7 +139,7 @@ func (c *Client) WaitJob(ctx context.Context, jobID string) error {
 		if current.State == JobFinished {
 			return nil
 		}
-		time.Sleep(8 * time.Second)
+		time.Sleep(duration)
 	}
 }
 
