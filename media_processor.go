@@ -23,11 +23,13 @@ func (c *Client) GetMediaProcessors(ctx context.Context) ([]MediaProcessor, erro
 	if err != nil {
 		return nil, err
 	}
+	c.logger.Printf("[INFO] get media processors ...")
 	var out struct {
 		MediaProcessors []MediaProcessor `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
 		return nil, err
 	}
+	c.logger.Printf("[INFO] completed")
 	return out.MediaProcessors, nil
 }

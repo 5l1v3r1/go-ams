@@ -37,10 +37,12 @@ func (c *Client) GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 		return nil, errors.Wrap(err, "request build failed")
 	}
 
+	c.logger.Printf("[INFO] get asset #%s ...", assetID)
 	var out Asset
 	if err := c.do(req, http.StatusOK, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return &out, nil
 }
 
@@ -49,12 +51,14 @@ func (c *Client) GetAssets(ctx context.Context) ([]Asset, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+	c.logger.Printf("[INFO] get assets ...")
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return out.Assets, nil
 }
 
@@ -66,10 +70,12 @@ func (c *Client) CreateAsset(ctx context.Context, name string) (*Asset, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+	c.logger.Printf("[INFO] create asset [name=%#v] ...", name)
 	var out Asset
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed, new asset[#%s]", out.ID)
 	return &out, nil
 }
 
@@ -79,12 +85,15 @@ func (c *Client) GetAssetFiles(ctx context.Context, assetID string) ([]AssetFile
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+
+	c.logger.Printf("[INFO] get asset[#%s] files ...", assetID)
 	var out struct {
 		AssetFiles []AssetFile `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return out.AssetFiles, nil
 }
 

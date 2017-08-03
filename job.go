@@ -86,12 +86,15 @@ func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, medi
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+
+	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
 	var out struct {
 		Data Job `json:"d"`
 	}
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return &out.Data, nil
 }
 
@@ -101,12 +104,14 @@ func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asse
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+	c.logger.Printf("[INFO] get job[#%s]'s output media assets ...", jobID)
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
 	if err := c.do(req, http.StatusOK, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return out.Assets, nil
 }
 
@@ -116,14 +121,19 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+
+	c.logger.Printf("[INFO] get job #%s ...", jobID)
 	var out Job
 	if err := c.do(req, http.StatusOK, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return &out, nil
 }
 
 func (c *Client) WaitJob(ctx context.Context, jobID string, duration time.Duration) error {
+	c.logger.Printf("[INFO] waiting job #%s ...", jobID)
+	defer c.logger.Printf("[INFO] finished #%s", jobID)
 	for {
 		current, err := c.GetJob(ctx, jobID)
 		if err != nil {
