@@ -35,10 +35,13 @@ func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType st
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+
+	c.logger.Printf("[INFO] create asset[#%s] file ...", assetID)
 	var out AssetFile
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed, new asset[#%s] file[#%s]", assetID, out.ID)
 	return &out, nil
 }
 
@@ -49,9 +52,11 @@ func (c *Client) UpdateAssetFile(ctx context.Context, assetFile *AssetFile) erro
 		return errors.Wrap(err, "request build failed")
 	}
 
+	c.logger.Printf("[INFO] update asset[#%s] file[#%s] ...", assetFile.ParentAssetID, assetFile.ID)
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 
 	return nil
 }

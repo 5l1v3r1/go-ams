@@ -44,10 +44,13 @@ func (c *Client) CreateAccessPolicy(ctx context.Context, name string, durationIn
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+
+	c.logger.Printf("[INFO] create access policy [name=%#v,permissions=%d] ...", name, permissions)
 	var out AccessPolicy
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed, new access policy[#%s]", out.ID)
 	return &out, nil
 }
 
@@ -57,9 +60,11 @@ func (c *Client) DeleteAccessPolicy(ctx context.Context, accessPolicyID string) 
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
+	c.logger.Printf("[INFO] delete access policy #%s ...", accessPolicyID)
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return nil
 }
 

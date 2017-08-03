@@ -51,10 +51,13 @@ func (c *Client) CreateLocator(ctx context.Context, accessPolicyID, assetID stri
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
+
+	c.logger.Printf("[INFO] create locator ...")
 	var out Locator
 	if err := c.do(req, http.StatusCreated, &out); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed, new locator[#%s]", out.ID)
 	return &out, nil
 }
 
@@ -64,9 +67,11 @@ func (c *Client) DeleteLocator(ctx context.Context, locatorID string) error {
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
+	c.logger.Printf("[INFO] delete locator #%s ...", locatorID)
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return nil
 }
 

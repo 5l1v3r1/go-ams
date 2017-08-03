@@ -32,9 +32,12 @@ func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, file *os.File)
 		return nil, errors.Wrap(err, "request build failed")
 	}
 	req.ContentLength = fileInfo.Size()
+
+	c.logger.Printf("[INFO] put blob ...")
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 	return []int{1}, nil
 }
 
@@ -52,9 +55,11 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 	}
 	req.ContentLength = int64(len(blockListXML))
 
+	c.logger.Printf("[INFO] put block list ...")
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
+	c.logger.Printf("[INFO] completed")
 
 	return nil
 }
