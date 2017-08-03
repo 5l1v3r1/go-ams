@@ -69,6 +69,7 @@ func Publish(ctx context.Context, client *ams.Client, assetID string) (string, e
 	} else {
 		u.Path = path.Join(u.Path, assetFiles[0].Name)
 	}
+	success = true
 	return u.String(), nil
 }
 
