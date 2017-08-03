@@ -42,6 +42,9 @@ type Client struct {
 }
 
 func NewClient(urlStr string, tokenSource oauth2.TokenSource) (*Client, error) {
+	if tokenSource == nil {
+		return nil, errors.New("missing tokenSource")
+	}
 	u, err := url.ParseRequestURI(urlStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "url parse failed: %s", urlStr)
