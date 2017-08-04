@@ -97,6 +97,21 @@ func (c *Client) GetAssetFiles(ctx context.Context, assetID string) ([]AssetFile
 	return out.AssetFiles, nil
 }
 
+func (c *Client) DeleteAsset(ctx context.Context, assetID string) error {
+	endpoint := toAssetResource(assetID)
+	req, err := c.newRequest(ctx, http.MethodDelete, endpoint)
+	if err != nil {
+		return errors.Wrap(err, "request build failed")
+	}
+
+	c.logger.Printf("[INFO] delete asset[#%s] ...")
+	if err := c.do(req, http.StatusNoContent, nil); err != nil {
+		return errors.Wrap(err, "request failed")
+	}
+	c.logger.Printf("[INFO] completed")
+	return nil
+}
+
 func toAssetResource(assetID string) string {
 	return toResource(assetsEndpoint, assetID)
 }
