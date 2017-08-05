@@ -32,6 +32,8 @@ var (
 )
 
 type Client struct {
+	UserAgent string
+
 	baseURL     *url.URL
 	tokenSource oauth2.TokenSource
 
@@ -51,13 +53,12 @@ func NewClient(urlStr string, tokenSource oauth2.TokenSource) (*Client, error) {
 	}
 	defaultLogger := log.New(ioutil.Discard, "", log.LstdFlags)
 	return &Client{
+		UserAgent:   userAgent,
 		baseURL:     u,
 		tokenSource: tokenSource,
-
-		httpClient: http.DefaultClient,
-
-		logger: defaultLogger,
-		debug:  false,
+		httpClient:  http.DefaultClient,
+		logger:      defaultLogger,
+		debug:       false,
 	}, nil
 }
 
@@ -83,6 +84,8 @@ func (c *Client) newCommonRequest(ctx context.Context, u *url.URL, method string
 		return nil, err
 	}
 	req.Header = option.Header
+	req.Header.Set("User-Agent", c.UserAgent)
+
 	req = req.WithContext(ctx)
 	return req, nil
 }

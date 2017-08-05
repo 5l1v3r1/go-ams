@@ -37,7 +37,6 @@ func defaultRequestOption() *requestOptions {
 		Params: url.Values{},
 	}
 
-	option.Header.Set("User-Agent", userAgent)
 	option.Header.Set("x-ms-version", APIVersion)
 	withOData(false)(option)
 
@@ -49,7 +48,6 @@ func defaultStorageRequestOption() *requestOptions {
 		Header: http.Header{},
 		Params: url.Values{},
 	}
-	option.Header.Set("User-Agent", userAgent)
 	option.Header.Set("x-ms-version", StorageAPIVersion)
 	option.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
 
