@@ -20,11 +20,11 @@ import (
 
 const (
 	Resource              = "https://rest.media.azure.net"
+	APIVersion            = "2.15"
+	StorageAPIVersion     = "2017-04-17"
+	DataServiceVersion    = "3.0"
+	MaxDataServiceVersion = "3.0"
 	version               = "0.2.0"
-	apiVersion            = "2.15"
-	storageAPIVersion     = "2017-04-17"
-	dataServiceVersion    = "3.0"
-	maxDataServiceVersion = "3.0"
 )
 
 var (

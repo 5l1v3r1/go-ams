@@ -38,7 +38,7 @@ func defaultRequestOption() *requestOptions {
 	}
 
 	option.Header.Set("User-Agent", userAgent)
-	option.Header.Set("x-ms-version", apiVersion)
+	option.Header.Set("x-ms-version", APIVersion)
 	withOData(false)(option)
 
 	return option
@@ -50,15 +50,15 @@ func defaultStorageRequestOption() *requestOptions {
 		Params: url.Values{},
 	}
 	option.Header.Set("User-Agent", userAgent)
-	option.Header.Set("x-ms-version", storageAPIVersion)
+	option.Header.Set("x-ms-version", StorageAPIVersion)
 	option.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
 
 	return option
 }
 
 func withDataServiceVersion(option *requestOptions) error {
-	option.Header.Set("DataServiceVersion", dataServiceVersion)
-	option.Header.Set("MaxDataServiceVersion", maxDataServiceVersion)
+	option.Header.Set("DataServiceVersion", DataServiceVersion)
+	option.Header.Set("MaxDataServiceVersion", MaxDataServiceVersion)
 	return nil
 }
 
