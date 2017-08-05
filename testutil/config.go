@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/orisano/go-adal"
 	"github.com/pkg/errors"
@@ -31,7 +31,7 @@ func LoadConfigFromEnv() (*Config, error) {
 		return nil, errors.New("missing AAD_TOKEN")
 	}
 
-	f, err := os.Open(path.Join(repoDir, "test_config.json"))
+	f, err := os.Open(filepath.Join(repoDir, "test_config.json"))
 	if err != nil {
 		return nil, errors.Wrap(err, "test_config.json open failed")
 	}

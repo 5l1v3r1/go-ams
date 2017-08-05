@@ -3,7 +3,7 @@ package amsutil
 import (
 	"context"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/recruit-tech/go-ams/testutil"
@@ -20,7 +20,7 @@ func TestUploadFile(t *testing.T) {
 		t.Fatalf("client build failed")
 	}
 
-	testFile, err := os.Open(path.Join(cnf.RepoDir, "testdata", "small.mp4"))
+	testFile, err := os.Open(filepath.Join(cnf.RepoDir, "testdata", "small.mp4"))
 	if err != nil {
 		t.Fatalf("test file open failed: %v", err)
 	}
