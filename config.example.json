@@ -1,0 +1,5 @@
+{
+  "ClientID": "your client id",
+  "Tenant": "your tenant domain or tenant id",
+  "AMSBaseURL": "https://your.media.azure.net/api/"
+}

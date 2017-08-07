@@ -2,26 +2,22 @@ package amsutil
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"os"
-	"path"
-
-	"github.com/recruit-tech/go-ams/testutil"
+	"github.com/recruit-tech/go-ams"
 )
 
 func TestEncode(t *testing.T) {
 	ctx := context.TODO()
-	cnf, err := testutil.LoadConfigFromEnv()
-	if err != nil {
-		t.Fatalf("config load failed: %v", err)
-	}
+	cnf := ams.TestConfigFromFile(t, "config.json")
 	AMS, err := cnf.Client(ctx)
 	if err != nil {
 		t.Fatalf("client construct failed: %v", err)
 	}
 
-	f, err := os.Open(path.Join(cnf.RepoDir, "testdata", "small.mp4"))
+	f, err := os.Open(filepath.Join(cnf.BaseDir, "testdata", "small.mp4"))
 	if err != nil {
 		t.Fatalf("video file open failed: %v", err)
 	}
@@ -43,6 +39,10 @@ func TestEncode(t *testing.T) {
 			MES = mediaProcessor.ID
 			break
 		}
+	}
+
+	if len(MES) == 0 {
+		t.Fatal("'Media Encoder Standard' not found")
 	}
 
 	resultAssetID, err := Encode(ctx, AMS, asset.ID, MES, "Adaptive Streaming")

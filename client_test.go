@@ -2,16 +2,14 @@ package ams
 
 import (
 	"testing"
-
-	"golang.org/x/oauth2"
 )
 
 func TestNewClient(t *testing.T) {
-	dummyTokenSource := newDummyTokenSource()
+	tokenSource := testTokenSource()
 	dummyURL := "http://example.ams.net/"
 
 	t.Run("withInvalidURL", func(t *testing.T) {
-		client, err := NewClient("", dummyTokenSource)
+		client, err := NewClient("", tokenSource)
 		if err == nil {
 			t.Errorf("accept invalid url")
 		}
@@ -31,7 +29,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("positive testing", func(t *testing.T) {
-		client, err := NewClient(dummyURL, dummyTokenSource)
+		client, err := NewClient(dummyURL, tokenSource)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -39,12 +37,4 @@ func TestNewClient(t *testing.T) {
 			t.Errorf("return invalid client")
 		}
 	})
-}
-
-func newDummyTokenSource() oauth2.TokenSource {
-	dummyTokenSource := oauth2.StaticTokenSource(&oauth2.Token{
-		AccessToken: "<<dummy access token>>",
-		TokenType:   "Bearer",
-	})
-	return dummyTokenSource
 }
