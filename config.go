@@ -14,6 +14,8 @@ type Config struct {
 	Tenant     string
 	AMSBaseURL string
 
+	Debug bool
+
 	ClientSecret string `json:"-"`
 
 	BaseDir string `json:"-"`
@@ -46,5 +48,10 @@ func (c *Config) Client(ctx context.Context) (*Client, error) {
 		return nil, errors.Wrap(err, "authentication context construct failed")
 	}
 	ts := ac.TokenSourceFromClientCredentials(ctx, Resource, c.ClientID, c.ClientSecret)
-	return NewClient(c.AMSBaseURL, ts)
+	client, err := NewClient(c.AMSBaseURL, ts)
+	if err != nil {
+		return nil, err
+	}
+	client.SetDebug(c.Debug)
+	return client, err
 }

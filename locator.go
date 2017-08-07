@@ -44,7 +44,7 @@ func (c *Client) CreateLocator(ctx context.Context, accessPolicyID, assetID stri
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
 		"AssetId":        assetID,
-		"StartTime":      startTime.UTC().Format(time.RFC3339),
+		"StartTime":      formatTime(startTime),
 		"Type":           locatorType,
 	}
 	req, err := c.newRequest(ctx, http.MethodPost, locatorsEndpoint, withJSON(params))

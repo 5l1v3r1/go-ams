@@ -1,9 +1,7 @@
 package ams
 
 import (
-	"os"
-	"path/filepath"
-	"testing"
+	"time"
 
 	"golang.org/x/oauth2"
 )
@@ -15,14 +13,14 @@ func testTokenSource() oauth2.TokenSource {
 	})
 }
 
-func TestConfigFromFile(t *testing.T, rpath string) *Config {
-	baseDir := os.Getenv("AMS_TEST_DIR")
-	configPath := filepath.Join(baseDir, rpath)
-	config, err := NewConfigFromFile(configPath)
-	if err != nil {
-		apath, _ := filepath.Abs(configPath)
-		t.Fatalf("config load failed %v: %v", apath, err)
+func testAsset() *Asset {
+	return &Asset{
+		ID:           "sample-id",
+		State:        StateInitialized,
+		Created:      formatTime(time.Now()),
+		LastModified: formatTime(time.Now()),
+		Name:         "Sample",
+		Options:      OptionNone,
+		FormatOption: FormatOptionNoFormat,
 	}
-	config.BaseDir = baseDir
-	return config
 }

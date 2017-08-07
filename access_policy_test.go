@@ -12,10 +12,7 @@ import (
 func TestClient_CreateAccessPolicy(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/AccessPolicies", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Fatalf("method must be POST, actual %s", r.Method)
-		}
-
+		testRequestMethod(t, r, http.MethodPost)
 		testAMSHeader(t, r.Header, false)
 
 		var params struct {
@@ -47,8 +44,8 @@ func TestClient_CreateAccessPolicy(t *testing.T) {
 
 		params.Metadata = "https://dummy.url"
 		params.ID = "nb:pid:UUID:sample-id"
-		params.Created = time.Now().UTC().Format(time.RFC3339)
-		params.LastModified = time.Now().UTC().Format(time.RFC3339)
+		params.Created = formatTime(time.Now())
+		params.LastModified = formatTime(time.Now())
 
 		resp, err := json.Marshal(params)
 		if err != nil {
@@ -88,9 +85,7 @@ func TestClient_CreateAccessPolicy(t *testing.T) {
 func TestClient_DeleteAccessPolicy(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/AccessPolicies('nb:pid:UUID:sample-id')", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			t.Fatalf("method must be DELETE, actual %s", r.Method)
-		}
+		testRequestMethod(t, r, http.MethodDelete)
 		testAMSHeader(t, r.Header, false)
 
 		w.WriteHeader(http.StatusNoContent)

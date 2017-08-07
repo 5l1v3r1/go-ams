@@ -28,7 +28,7 @@ func TestNewClient(t *testing.T) {
 		}
 	})
 
-	t.Run("positive testing", func(t *testing.T) {
+	t.Run("positiveTest", func(t *testing.T) {
 		client, err := NewClient(dummyURL, tokenSource)
 		if err != nil {
 			t.Fatal(err)

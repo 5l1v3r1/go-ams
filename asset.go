@@ -18,6 +18,17 @@ const (
 	OptionNone = 0
 )
 
+const (
+	StateInitialized = iota
+	StatePublished   // The 'Publish' action has been deprecated. Remove the code that checks whether an asset is in the 'Published' state.
+	StateDeleted
+)
+
+const (
+	FormatOptionNoFormat          = 0
+	FormatOptionAdaptiveStreaming = 1
+)
+
 type Asset struct {
 	ID                 string `json:"Id"`
 	State              int    `json:"State"`

@@ -5,13 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/recruit-tech/go-ams"
 )
 
 func TestUploadFile(t *testing.T) {
 	ctx := context.TODO()
-	cnf := ams.TestConfigFromFile(t, "config.json")
+	cnf := testConfigFromFile(t, "config.json")
 	AMS, err := cnf.Client(ctx)
 	if err != nil {
 		t.Fatalf("client build failed")

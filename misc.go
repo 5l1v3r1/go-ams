@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -25,4 +26,8 @@ func mergeValues(a, b url.Values) {
 			a.Set(k, v)
 		}
 	}
+}
+
+func formatTime(t time.Time) string {
+	return t.UTC().Format(time.RFC3339)
 }

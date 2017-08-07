@@ -49,7 +49,7 @@ func defaultStorageRequestOption() *requestOptions {
 		Params: url.Values{},
 	}
 	option.Header.Set("x-ms-version", StorageAPIVersion)
-	option.Header.Set("Date", time.Now().UTC().Format(time.RFC3339))
+	option.Header.Set("Date", formatTime(time.Now()))
 
 	return option
 }
