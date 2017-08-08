@@ -2,7 +2,6 @@ package ams
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,14 +12,10 @@ import (
 func TestClient_GetAsset(t *testing.T) {
 	expected := testAsset("sample-id", "Sample")
 	m := http.NewServeMux()
-	m.HandleFunc(fmt.Sprintf("/Assets('%v')", expected.ID), func(w http.ResponseWriter, r *http.Request) {
-		testRequestMethod(t, r, http.MethodGet)
-		testAMSHeader(t, r.Header, false)
+	m.HandleFunc(fmt.Sprintf("/Assets('%v')", expected.ID),
+		testJSONHandler(t, http.MethodGet, false, http.StatusOK, expected),
+	)
 
-		if err := json.NewEncoder(w).Encode(expected); err != nil {
-			t.Fatal(err)
-		}
-	})
 	s := httptest.NewServer(m)
 	defer s.Close()
 
