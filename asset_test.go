@@ -27,7 +27,7 @@ func TestClient_GetAsset(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(actual, expected) {
+	if !reflect.DeepEqual(*actual, expected) {
 		t.Errorf("unexpected asset. expected: %#v, actual: %#v", expected, actual)
 	}
 }
