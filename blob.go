@@ -45,7 +45,7 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 	params := url.Values{
 		"comp": {"blocklist"},
 	}
-	blockListXML, err := BuildBlockListXML(blockList)
+	blockListXML, err := buildBlockListXML(blockList)
 	if err != nil {
 		return errors.Wrap(err, "block list XML build failed")
 	}
@@ -75,7 +75,7 @@ func buildBlockID(blockID int) string {
 	return base64.StdEncoding.EncodeToString([]byte(s))
 }
 
-func BuildBlockListXML(blockList []int) ([]byte, error) {
+func buildBlockListXML(blockList []int) ([]byte, error) {
 	var b bytes.Buffer
 	if err := blockListXML.Execute(&b, blockList); err != nil {
 		return nil, errors.Wrap(err, "template execute failed")
