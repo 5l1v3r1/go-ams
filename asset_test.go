@@ -154,3 +154,22 @@ func TestClient_GetAssetFiles(t *testing.T) {
 		t.Errorf("unexpected asset files. expected: %#v, actual: %#v", expected, actual)
 	}
 }
+
+func TestClient_DeleteAsset(t *testing.T) {
+	assetID := "delete-asset-id"
+	m := http.NewServeMux()
+	m.HandleFunc(fmt.Sprintf("/Assets('%v')", assetID),
+		testJSONHandler(t, http.MethodDelete, false, http.StatusNoContent, nil),
+	)
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	client, err := NewClient(s.URL, testTokenSource())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.DeleteAsset(context.TODO(), assetID); err != nil {
+		t.Error(err)
+	}
+}
