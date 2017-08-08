@@ -57,10 +57,7 @@ func TestClient_CreateAccessPolicy(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	name := "test"
 	durationInMinutes := 400.0
@@ -90,10 +87,7 @@ func TestClient_DeleteAccessPolicy(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 	if err := client.DeleteAccessPolicy(context.TODO(), accessPolicyID); err != nil {
 		t.Error(err)
 	}

@@ -45,10 +45,7 @@ func TestClient_GetMediaProcessors(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	actual, err := client.GetMediaProcessors(context.TODO())
 	if err != nil {

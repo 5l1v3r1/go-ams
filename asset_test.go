@@ -21,10 +21,7 @@ func TestClient_GetAsset(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	actual, err := client.GetAsset(context.TODO(), expected.ID)
 	if err != nil {
@@ -49,10 +46,7 @@ func TestClient_GetAssets(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	actual, err := client.GetAssets(context.TODO())
 	if err != nil {
@@ -93,10 +87,7 @@ func TestClient_CreateAsset(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	name := "sample"
 	asset, err := client.CreateAsset(context.TODO(), name)
@@ -141,10 +132,7 @@ func TestClient_GetAssetFiles(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	actual, err := client.GetAssetFiles(context.TODO(), assetID)
 	if err != nil {
@@ -164,10 +152,7 @@ func TestClient_DeleteAsset(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	if err := client.DeleteAsset(context.TODO(), assetID); err != nil {
 		t.Error(err)

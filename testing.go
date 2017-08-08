@@ -49,3 +49,11 @@ func testWrapValue(value interface{}) interface{} {
 		Value: value,
 	}
 }
+
+func testClient(t *testing.T, urlStr string) *Client {
+	client, err := NewClient(urlStr, testTokenSource())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return client
+}

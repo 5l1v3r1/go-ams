@@ -43,10 +43,7 @@ func TestClient_CreateAssetFile(t *testing.T) {
 	s := httptest.NewServer(m)
 	defer s.Close()
 
-	client, err := NewClient(s.URL, testTokenSource())
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := testClient(t, s.URL)
 
 	assetID := "parent-asset-id"
 	name := "test.mp4"
