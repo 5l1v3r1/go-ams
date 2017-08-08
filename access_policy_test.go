@@ -47,13 +47,10 @@ func TestClient_CreateAccessPolicy(t *testing.T) {
 		params.Created = formatTime(time.Now())
 		params.LastModified = formatTime(time.Now())
 
-		resp, err := json.Marshal(params)
-		if err != nil {
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(params); err != nil {
 			t.Fatal(err)
 		}
-
-		w.WriteHeader(http.StatusCreated)
-		w.Write(resp)
 	})
 
 	s := httptest.NewServer(m)
