@@ -3,6 +3,7 @@ package ams
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -80,13 +81,12 @@ func TestClient_CreateAccessPolicy(t *testing.T) {
 }
 
 func TestClient_DeleteAccessPolicy(t *testing.T) {
+	accessPolicyID := "nb:pid:UUID:sample-policy"
 	m := http.NewServeMux()
-	m.HandleFunc("/AccessPolicies('nb:pid:UUID:sample-id')", func(w http.ResponseWriter, r *http.Request) {
-		testRequestMethod(t, r, http.MethodDelete)
-		testAMSHeader(t, r.Header, false)
+	m.HandleFunc(fmt.Sprintf("/AccessPolicies('%v')", accessPolicyID),
+		testJSONHandler(t, http.MethodDelete, false, http.StatusNoContent, nil),
+	)
 
-		w.WriteHeader(http.StatusNoContent)
-	})
 	s := httptest.NewServer(m)
 	defer s.Close()
 
@@ -94,7 +94,7 @@ func TestClient_DeleteAccessPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := client.DeleteAccessPolicy(context.TODO(), "nb:pid:UUID:sample-id"); err != nil {
+	if err := client.DeleteAccessPolicy(context.TODO(), accessPolicyID); err != nil {
 		t.Error(err)
 	}
 }

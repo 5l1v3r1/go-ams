@@ -1,6 +1,9 @@
 package ams
 
 import (
+	"encoding/json"
+	"net/http"
+	"testing"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -22,5 +25,19 @@ func testAsset(id, name string) Asset {
 		Name:         name,
 		Options:      OptionNone,
 		FormatOption: FormatOptionNoFormat,
+	}
+}
+
+func testJSONHandler(t *testing.T, method string, verbose bool, statusCode int, resp interface{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		testRequestMethod(t, r, method)
+		testAMSHeader(t, r.Header, verbose)
+
+		w.WriteHeader(statusCode)
+		if resp != nil {
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 }
