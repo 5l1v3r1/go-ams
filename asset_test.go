@@ -107,3 +107,50 @@ func TestClient_CreateAsset(t *testing.T) {
 		t.Errorf("unexpected Name. expected: %#v, actual: %#v", name, asset.Name)
 	}
 }
+
+func TestClient_GetAssetFiles(t *testing.T) {
+	assetID := "test-asset-id"
+	expected := []AssetFile{
+		{
+			ID:              "asset-file-1",
+			Name:            "sample1",
+			ContentFileSize: "0",
+			ParentAssetID:   assetID,
+			IsPrimary:       false,
+			LastModified:    formatTime(time.Now()),
+			Created:         formatTime(time.Now()),
+			MIMEType:        "text/plain",
+			ContentChecksum: "",
+		},
+		{
+			ID:              "asset-file-2",
+			Name:            "sample2",
+			ContentFileSize: "100000000000000000",
+			ParentAssetID:   assetID,
+			IsPrimary:       true,
+			LastModified:    formatTime(time.Now()),
+			Created:         formatTime(time.Now()),
+			MIMEType:        "vide/mp4",
+			ContentChecksum: "",
+		},
+	}
+	m := http.NewServeMux()
+	m.HandleFunc(fmt.Sprintf("/Assets('%v')/Files", assetID),
+		testJSONHandler(t, http.MethodGet, false, http.StatusOK, testWrapValue(expected)),
+	)
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	client, err := NewClient(s.URL, testTokenSource())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual, err := client.GetAssetFiles(context.TODO(), assetID)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("unexpected asset files. expected: %#v, actual: %#v", expected, actual)
+	}
+}
