@@ -11,7 +11,7 @@ import (
 )
 
 func TestClient_GetAsset(t *testing.T) {
-	expected := testAsset()
+	expected := testAsset("sample-id", "Sample")
 	m := http.NewServeMux()
 	m.HandleFunc(fmt.Sprintf("/Assets('%v')", expected.ID), func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, http.MethodGet)
@@ -21,8 +21,9 @@ func TestClient_GetAsset(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-
 	s := httptest.NewServer(m)
+	defer s.Close()
+
 	client, err := NewClient(s.URL, testTokenSource())
 	if err != nil {
 		t.Fatal(err)

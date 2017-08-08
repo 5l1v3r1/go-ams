@@ -13,13 +13,13 @@ func testTokenSource() oauth2.TokenSource {
 	})
 }
 
-func testAsset() *Asset {
-	return &Asset{
-		ID:           "sample-id",
+func testAsset(id, name string) Asset {
+	return Asset{
+		ID:           id,
 		State:        StateInitialized,
 		Created:      formatTime(time.Now()),
 		LastModified: formatTime(time.Now()),
-		Name:         "Sample",
+		Name:         name,
 		Options:      OptionNone,
 		FormatOption: FormatOptionNoFormat,
 	}
