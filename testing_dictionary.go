@@ -7,29 +7,33 @@ import (
 	"testing"
 )
 
-type headerMatcher func(string, string) bool
-
-type headerChecker struct {
-	t      *testing.T
-	header http.Header
+type dictionary interface {
+	Get(string) string
 }
 
-func (hc *headerChecker) Match(key, expected string, matcher headerMatcher) {
-	if actual := hc.header.Get(key); !matcher(actual, expected) {
+type headerMatcher func(string, string) bool
+
+type checker struct {
+	t          *testing.T
+	dictionary dictionary
+}
+
+func (hc *checker) Match(key, expected string, matcher headerMatcher) {
+	if actual := hc.dictionary.Get(key); !matcher(actual, expected) {
 		hc.t.Errorf("%s: expected %#v, actual %#v", key, expected, actual)
 	}
 }
 
-func (hc *headerChecker) Assert(key, expected string) {
+func (hc *checker) Assert(key, expected string) {
 	hc.Match(key, expected, func(a, b string) bool { return a == b })
 }
 
-func (hc *headerChecker) AssertNot(key, unexpected string) {
+func (hc *checker) AssertNot(key, unexpected string) {
 	hc.Match(key, unexpected, func(a, b string) bool { return a != b })
 }
 
 func testAMSHeader(t *testing.T, header http.Header, verbose bool) {
-	hc := headerChecker{t, header}
+	hc := checker{t, header}
 	hc.Assert("x-ms-version", APIVersion)
 	hc.Assert("DataServiceVersion", DataServiceVersion)
 	hc.Assert("MaxDataServiceVersion", MaxDataServiceVersion)
@@ -44,7 +48,7 @@ func testAMSHeader(t *testing.T, header http.Header, verbose bool) {
 }
 
 func testStorageHeader(t *testing.T, header http.Header) {
-	hc := headerChecker{t, header}
+	hc := checker{t, header}
 	hc.Assert("x-ms-version", StorageAPIVersion)
 	hc.AssertNot("Date", "")
 }
