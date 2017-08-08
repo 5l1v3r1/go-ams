@@ -41,3 +41,11 @@ func testJSONHandler(t *testing.T, method string, verbose bool, statusCode int, 
 		}
 	}
 }
+
+func testWrapValue(value interface{}) interface{} {
+	return struct {
+		Value interface{} `json:"value"`
+	}{
+		Value: value,
+	}
+}

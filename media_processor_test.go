@@ -37,14 +37,9 @@ func TestClient_GetMediaProcessors(t *testing.T) {
 			Version:     "2.0.0",
 		},
 	}
-	resp := struct {
-		Value []MediaProcessor `json:"value"`
-	}{
-		Value: expected,
-	}
 	m := http.NewServeMux()
 	m.HandleFunc("/MediaProcessors",
-		testJSONHandler(t, http.MethodGet, false, http.StatusOK, resp),
+		testJSONHandler(t, http.MethodGet, false, http.StatusOK, testWrapValue(expected)),
 	)
 
 	s := httptest.NewServer(m)
