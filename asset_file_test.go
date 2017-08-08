@@ -53,7 +53,7 @@ func TestClient_CreateAssetFile(t *testing.T) {
 	mime := "video/mp4"
 	assetFile, err := client.CreateAssetFile(context.TODO(), assetID, name, mime)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	tcs := []struct {
