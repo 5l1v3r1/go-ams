@@ -87,3 +87,50 @@ func TestClient_PutBlob(t *testing.T) {
 		}
 	})
 }
+
+func TestClient_PutBlockList(t *testing.T) {
+	blockList := []int{1}
+
+	expected, err := buildBlockListXML(blockList)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		testRequestMethod(t, r, http.MethodPut)
+		testStorageHeader(t, r.Header)
+
+		qc := checker{
+			t:          t,
+			dictionary: r.URL.Query(),
+		}
+		qc.Assert("comp", "blocklist")
+
+		if r.ContentLength != int64(len(expected)) {
+			t.Errorf("unexpected ContentLength. expected: %v, actual: %v", len(expected), r.ContentLength)
+		}
+
+		actual, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if bytes.Compare(actual, expected) != 0 {
+			t.Error("post invalid file")
+		}
+
+		w.WriteHeader(http.StatusCreated)
+	})
+	s := httptest.NewServer(m)
+	client := testClient(t, s.URL)
+
+	u, err := url.ParseRequestURI(s.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.PutBlockList(context.TODO(), u, blockList); err != nil {
+		t.Error(err)
+	}
+}
