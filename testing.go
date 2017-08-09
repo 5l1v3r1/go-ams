@@ -2,7 +2,9 @@ package ams
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -56,4 +58,14 @@ func testClient(t *testing.T, urlStr string) *Client {
 		t.Fatal(err)
 	}
 	return client
+}
+
+func testTempFile(t *testing.T) (string, func()) {
+	tf, err := ioutil.TempFile("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tf.Close()
+
+	return tf.Name(), func() { os.Remove(tf.Name()) }
 }
