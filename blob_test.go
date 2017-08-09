@@ -48,7 +48,7 @@ func TestClient_PutBlob(t *testing.T) {
 		}
 
 		if int64(len(actual)) != r.ContentLength {
-			t.Errorf("unexpected ContentLength, expected: %v, actual: %v", len(actual), r.ContentLength)
+			t.Errorf("unexpected ContentLength. expected: %v, actual: %v", len(actual), r.ContentLength)
 		}
 
 		w.WriteHeader(http.StatusCreated)
