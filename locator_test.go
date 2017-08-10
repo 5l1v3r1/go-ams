@@ -11,6 +11,22 @@ import (
 	"time"
 )
 
+func TestLocator_ToUploadURL(t *testing.T) {
+	locator := Locator{
+		Path: "https://fake.url/upload?with=sas_tokens",
+	}
+	u, err := locator.ToUploadURL("test.mp4")
+	if err != nil {
+		t.Error(err)
+	}
+	expected := "https://fake.url/upload/test.mp4?with=sas_tokens"
+	actual := u.String()
+
+	if actual != expected {
+		t.Error("unexpected UploadURL. expected: %v, actual: %v", expected, actual)
+	}
+}
+
 func TestClient_CreateLocator(t *testing.T) {
 	accessPolicyID := "sample-access-policy-id"
 	assetID := "sample-asset-id"
