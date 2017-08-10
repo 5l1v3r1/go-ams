@@ -42,10 +42,6 @@ func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 	return uploadURL, nil
 }
 
-func (l *Locator) toResource() string {
-	return toResource(locatorsEndpoint, l.ID)
-}
-
 func (c *Client) CreateLocator(ctx context.Context, accessPolicyID, assetID string, startTime time.Time, locatorType int) (*Locator, error) {
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
