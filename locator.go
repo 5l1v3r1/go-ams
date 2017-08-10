@@ -14,6 +14,12 @@ const (
 	locatorsEndpoint = "Locators"
 )
 
+const (
+	LocatorNone = iota
+	LocatorSAS
+	LocatorOnDemandOrigin
+)
+
 type Locator struct {
 	ID                     string `json:"Id"`
 	ExpirationDateTime     string `json:"ExpirationDateTime"`

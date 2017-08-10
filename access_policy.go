@@ -19,12 +19,6 @@ const (
 	PermissionNone = 0
 )
 
-const (
-	LocatorNone = iota
-	LocatorSAS
-	LocatorOnDemandOrigin
-)
-
 type AccessPolicy struct {
 	ID                string  `json:"Id"`
 	Created           string  `json:"Created"`
