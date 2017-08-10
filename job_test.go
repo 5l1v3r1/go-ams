@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
+	"time"
 )
 
 func TestClient_EncodeAsset(t *testing.T) {
@@ -71,5 +73,42 @@ func TestClient_EncodeAsset(t *testing.T) {
 	}
 	if job == nil {
 		t.Error("return nil job")
+	}
+}
+
+func TestClient_GetOutputMediaAssets(t *testing.T) {
+	jobID := "sample-job-id"
+	expected := []Asset{
+		{
+			ID:                 "encode-result-asset-id",
+			State:              StateInitialized,
+			Created:            formatTime(time.Now()),
+			LastModified:       formatTime(time.Now()),
+			Name:               "EncodeResult",
+			Options:            OptionNone,
+			FormatOption:       FormatOptionAdaptiveStreaming,
+			URI:                "https://fake.url/Asset('encode-result-asset-id')",
+			StorageAccountName: "fake-storage-account",
+		},
+	}
+	body := struct {
+		Assets []Asset `json:"value"`
+	}{
+		Assets: expected,
+	}
+
+	m := http.NewServeMux()
+	m.HandleFunc(fmt.Sprintf("/Jobs('%v')/OutputMediaAssets", jobID),
+		testJSONHandler(t, http.MethodGet, false, http.StatusOK, body),
+	)
+	s := httptest.NewServer(m)
+
+	client := testClient(t, s.URL)
+	actual, err := client.GetOutputMediaAssets(context.TODO(), jobID)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("unexpected output media asset. expected: %#v, actual: %#v", expected, actual)
 	}
 }
