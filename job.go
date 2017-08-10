@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -129,28 +128,6 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
 	}
 	c.logger.Printf("[INFO] completed")
 	return &out, nil
-}
-
-func (c *Client) WaitJob(ctx context.Context, jobID string, duration time.Duration) error {
-	c.logger.Printf("[INFO] waiting job #%s ...", jobID)
-	defer c.logger.Printf("[INFO] finished #%s", jobID)
-	for {
-		current, err := c.GetJob(ctx, jobID)
-		if err != nil {
-			return err
-		}
-
-		if current.State == JobError {
-			return errors.New("job failed")
-		}
-		if current.State == JobCanceled {
-			return errors.New("job canceled")
-		}
-		if current.State == JobFinished {
-			return nil
-		}
-		time.Sleep(duration)
-	}
 }
 
 func buildTaskBody(assetName string) string {
