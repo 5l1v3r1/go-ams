@@ -23,7 +23,7 @@ func TestLocator_ToUploadURL(t *testing.T) {
 	actual := u.String()
 
 	if actual != expected {
-		t.Error("unexpected UploadURL. expected: %v, actual: %v", expected, actual)
+		t.Errorf("unexpected UploadURL. expected: %v, actual: %v", expected, actual)
 	}
 }
 
