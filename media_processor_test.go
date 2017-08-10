@@ -7,7 +7,6 @@ import (
 	"context"
 	"net/http/httptest"
 	"reflect"
-	_ "reflect"
 )
 
 func TestClient_GetMediaProcessors(t *testing.T) {
