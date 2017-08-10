@@ -123,6 +123,8 @@ func TestClient_PutBlockList(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 	s := httptest.NewServer(m)
+	defer s.Close()
+
 	client := testClient(t, s.URL)
 
 	u, err := url.ParseRequestURI(s.URL)

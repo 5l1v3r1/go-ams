@@ -82,6 +82,8 @@ func TestClient_CreateLocator(t *testing.T) {
 	})
 
 	s := httptest.NewServer(m)
+	defer s.Close()
+
 	client := testClient(t, s.URL)
 
 	actual, err := client.CreateLocator(context.TODO(), accessPolicyID, assetID, startTime, locatorType)
@@ -101,6 +103,8 @@ func TestClient_DeleteLocator(t *testing.T) {
 		testJSONHandler(t, http.MethodDelete, false, http.StatusNoContent, nil),
 	)
 	s := httptest.NewServer(m)
+	defer s.Close()
+
 	client := testClient(t, s.URL)
 	if err := client.DeleteLocator(context.TODO(), locatorID); err != nil {
 		t.Error(err)

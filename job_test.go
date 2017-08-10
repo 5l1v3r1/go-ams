@@ -65,6 +65,8 @@ func TestClient_EncodeAsset(t *testing.T) {
 		fmt.Fprint(w, rawJob)
 	})
 	s := httptest.NewServer(m)
+	defer s.Close()
+
 	client = testClient(t, s.URL)
 
 	job, err := client.EncodeAsset(context.TODO(), assetID, outputAssetName, mediaProcessorID, configuration)
@@ -102,6 +104,7 @@ func TestClient_GetOutputMediaAssets(t *testing.T) {
 		testJSONHandler(t, http.MethodGet, false, http.StatusOK, body),
 	)
 	s := httptest.NewServer(m)
+	defer s.Close()
 
 	client := testClient(t, s.URL)
 	actual, err := client.GetOutputMediaAssets(context.TODO(), jobID)
