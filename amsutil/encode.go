@@ -37,7 +37,7 @@ func Encode(ctx context.Context, client *ams.Client, assetID, mediaProcessorID, 
 		return "", errors.Wrap(err, "get output media assets failed")
 	}
 
-	if err := client.WaitJob(ctx, job.ID, 3*time.Second); err != nil {
+	if err := WaitJob(ctx, client, job.ID, 3*time.Second); err != nil {
 		return "", errors.Wrap(err, "wait job failed")
 	}
 
