@@ -12,24 +12,39 @@ import (
 )
 
 func TestClient_GetAsset(t *testing.T) {
-	expected := testAsset("sample-id", "Sample")
-	m := http.NewServeMux()
-	m.HandleFunc(fmt.Sprintf("/Assets('%v')", expected.ID),
-		testJSONHandler(t, http.MethodGet, false, http.StatusOK, expected),
-	)
+	t.Run("invalidAssetID", func(t *testing.T) {
+		invalidID := "%"
 
-	s := httptest.NewServer(m)
-	defer s.Close()
+		client := testClient(t, "http://dummy.url")
+		asset, err := client.GetAsset(context.TODO(), invalidID)
+		if err == nil {
+			t.Error("accept invalid ID")
+		}
+		if asset != nil {
+			t.Errorf("return invalid asset: %#v", asset)
+		}
+	})
 
-	client := testClient(t, s.URL)
+	t.Run("positiveCase", func(t *testing.T) {
+		expected := testAsset("sample-id", "Sample")
+		m := http.NewServeMux()
+		m.HandleFunc(fmt.Sprintf("/Assets('%v')", expected.ID),
+			testJSONHandler(t, http.MethodGet, false, http.StatusOK, expected),
+		)
 
-	actual, err := client.GetAsset(context.TODO(), expected.ID)
-	if err != nil {
-		t.Error(err)
-	}
-	if !reflect.DeepEqual(*actual, expected) {
-		t.Errorf("unexpected asset. expected: %#v, actual: %#v", expected, actual)
-	}
+		s := httptest.NewServer(m)
+		defer s.Close()
+
+		client := testClient(t, s.URL)
+
+		actual, err := client.GetAsset(context.TODO(), expected.ID)
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(*actual, expected) {
+			t.Errorf("unexpected asset. expected: %#v, actual: %#v", expected, actual)
+		}
+	})
 }
 
 func TestClient_GetAssets(t *testing.T) {
