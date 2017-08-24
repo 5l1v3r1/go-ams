@@ -14,6 +14,7 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/k0kubun/pp"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -116,12 +117,18 @@ func (c *Client) newStorageRequest(ctx context.Context, method string, u url.URL
 
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
 	if c.debug {
-		reqDump, err := httputil.DumpRequestOut(req, false)
+		dump, err := httputil.DumpRequestOut(req, false)
 		if err != nil {
 			return errors.Wrap(err, "request dump failed")
 		}
-		c.logger.Printf("[DEBUG] url = %s", req.URL.String())
-		c.logger.Printf("[DEBUG] request header\n%s", string(reqDump))
+		c.logger.Print("[DEBUG] request header\n" + string(dump))
+
+		var b []byte
+		req.Body, b, err = sniffBody(req.Body)
+		if err != nil {
+			return errors.Wrap(err, "request body read failed")
+		}
+		c.logger.Print("[DEBUG] request body\n" + string(b))
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -130,24 +137,19 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	}
 	defer resp.Body.Close()
 
-	var body io.Reader
-	body = resp.Body
-
 	if c.debug {
-		respDump, err := httputil.DumpResponse(resp, false)
+		dump, err := httputil.DumpResponse(resp, false)
 		if err != nil {
 			return errors.Wrap(err, "response dump failed")
 		}
-		c.logger.Printf("[DEBUG] url = %s", req.URL.String())
-		c.logger.Printf("[DEBUG] response header\n%s", string(respDump))
+		c.logger.Print("[DEBUG] response header\n" + string(dump))
 
-		var b bytes.Buffer
-		if _, err := b.ReadFrom(body); err != nil {
+		var b []byte
+		resp.Body, b, err = sniffBody(resp.Body)
+		if err != nil {
 			return errors.Wrap(err, "response body read failed")
 		}
-		c.logger.Printf("[DEBUG] body\n%s", b.String())
-
-		body = &b
+		c.logger.Print("[DEBUG] response body\n" + string(b))
 	}
 
 	if err := assertStatusCode(resp, expectedCode); err != nil {
@@ -155,13 +157,13 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	}
 
 	if out != nil {
-		decoder := json.NewDecoder(body)
-		if err := decoder.Decode(out); err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
 			return errors.Wrap(err, "response decode failed")
 		}
 
 		if c.debug {
-			c.logger.Printf("[DEBUG] parsed body\n%#v", out)
+			c.logger.Print("[DEBUG] parsed body")
+			c.logger.Print(pp.Sprint(out))
 		}
 	}
 
@@ -172,4 +174,12 @@ func (c *Client) buildURI(spath string) string {
 	u := *c.baseURL
 	u.Path = path.Join(u.Path, spath)
 	return u.String()
+}
+
+func sniffBody(r io.ReadCloser) (io.ReadCloser, []byte, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return r, []byte{}, err
+	}
+	return ioutil.NopCloser(bytes.NewReader(b)), b, nil
 }
