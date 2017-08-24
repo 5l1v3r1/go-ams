@@ -110,3 +110,51 @@ func TestClient_DeleteLocator(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestClient_GetLocators(t *testing.T) {
+	m := http.NewServeMux()
+
+	expected := []Locator{
+		{
+			ID:                     "sample-locator-id-1",
+			ExpirationDateTime:     formatTime(time.Now()),
+			Type:                   LocatorSAS,
+			Path:                   "https://fake.url/upload?with=sas_tokens",
+			BaseURI:                "https://fake.url",
+			ContentAccessComponent: "",
+			AccessPolicyID:         "dummy-access-policy-id-1",
+			AssetID:                "sample-asset-id-1",
+			StartTime:              formatTime(time.Now()),
+			Name:                   "Sample Locator 1",
+		},
+		{
+			ID:                     "sample-locator-id-2",
+			ExpirationDateTime:     formatTime(time.Now()),
+			Type:                   LocatorSAS,
+			Path:                   "https://fake.url/upload?with=sas_tokens",
+			BaseURI:                "https://fake.url",
+			ContentAccessComponent: "",
+			AccessPolicyID:         "dummy-access-policy-id-2",
+			AssetID:                "sample-asset-id-2",
+			StartTime:              formatTime(time.Now()),
+			Name:                   "Sample Locator 2",
+		},
+	}
+	resp := struct {
+		Value []Locator
+	}{
+		Value: expected,
+	}
+	m.HandleFunc("/Locators", testJSONHandler(t, http.MethodGet, false, http.StatusOK, resp))
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	client := testClient(t, s.URL)
+	actual, err := client.GetLocators(context.TODO())
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("unexpected locators. expected: %#v, actual: %#v", expected, actual)
+	}
+}

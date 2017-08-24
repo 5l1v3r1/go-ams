@@ -77,6 +77,20 @@ func (c *Client) DeleteLocator(ctx context.Context, locatorID string) error {
 	return nil
 }
 
+func (c *Client) GetLocators(ctx context.Context) ([]Locator, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, locatorsEndpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "request build failed")
+	}
+	var out struct {
+		Locators []Locator `json:"value"`
+	}
+	if err := c.do(req, http.StatusOK, &out); err != nil {
+		return nil, errors.Wrap(err, "request failed")
+	}
+	return out.Locators, nil
+}
+
 func toLocatorResource(locatorID string) string {
 	return toResource(locatorsEndpoint, locatorID)
 }
