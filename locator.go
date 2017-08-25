@@ -77,8 +77,8 @@ func (c *Client) DeleteLocator(ctx context.Context, locatorID string) error {
 	return nil
 }
 
-func (c *Client) GetLocators(ctx context.Context) ([]Locator, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, locatorsEndpoint)
+func (c *Client) getLocators(ctx context.Context, endpoint string) ([]Locator, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
 	}
@@ -89,6 +89,15 @@ func (c *Client) GetLocators(ctx context.Context) ([]Locator, error) {
 		return nil, errors.Wrap(err, "request failed")
 	}
 	return out.Locators, nil
+}
+
+func (c *Client) GetLocators(ctx context.Context) ([]Locator, error) {
+	return c.getLocators(ctx, locatorsEndpoint)
+}
+
+func (c *Client) GetLocatorsWithAsset(ctx context.Context, assetID string) ([]Locator, error) {
+	endpoint := path.Join(assetsEndpoint, toAssetResource(assetID), locatorsEndpoint)
+	return c.getLocators(ctx, endpoint)
 }
 
 func toLocatorResource(locatorID string) string {
