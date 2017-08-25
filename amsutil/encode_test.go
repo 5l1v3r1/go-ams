@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestEncode(t *testing.T) {
@@ -43,8 +44,12 @@ func TestEncode(t *testing.T) {
 		t.Fatal("'Media Encoder Standard' not found")
 	}
 
-	resultAssetID, err := Encode(ctx, AMS, asset.ID, MES, "Adaptive Streaming")
+	encodedAssets, job, err := Encode(ctx, AMS, asset.ID, MES, "Adaptive Streaming")
 	if err != nil {
+		t.Fatalf("encode rejected: %v", err)
+	}
+
+	if err := WaitJob(ctx, AMS, job.ID, 3*time.Second); err != nil {
 		t.Fatalf("encode failed: %v", err)
 	}
 
@@ -52,7 +57,9 @@ func TestEncode(t *testing.T) {
 		t.Fatalf("delete failed: %v", err)
 	}
 
-	if err := AMS.DeleteAsset(ctx, resultAssetID); err != nil {
-		t.Fatalf("delete failed: %v", err)
+	for _, encodedAsset := range encodedAssets {
+		if err := AMS.DeleteAsset(ctx, encodedAsset.ID); err != nil {
+			t.Fatalf("delete failed [asset#%v]: %v", encodedAsset.ID, err)
+		}
 	}
 }
