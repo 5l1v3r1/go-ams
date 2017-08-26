@@ -96,7 +96,7 @@ func (c *Client) GetLocators(ctx context.Context) ([]Locator, error) {
 }
 
 func (c *Client) GetLocatorsWithAsset(ctx context.Context, assetID string) ([]Locator, error) {
-	endpoint := path.Join(assetsEndpoint, toAssetResource(assetID), locatorsEndpoint)
+	endpoint := path.Join(toAssetResource(assetID), locatorsEndpoint)
 	return c.getLocators(ctx, endpoint)
 }
 
