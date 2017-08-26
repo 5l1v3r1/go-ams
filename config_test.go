@@ -1,6 +1,7 @@
 package ams
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -102,6 +103,55 @@ func TestNewConfigFromFile(t *testing.T) {
 
 		if conf.ClientSecret != clientSecret {
 			t.Errorf("unexpected ClientSecret. expected: %v, actual: %v", clientSecret, conf.ClientSecret)
+		}
+	})
+}
+
+func TestConfig_Client(t *testing.T) {
+
+	t.Run("invalidTenant", func(t *testing.T) {
+		config := Config{
+			ClientID:     "dummy-client-id",
+			Tenant:       "",
+			AMSBaseURL:   "http://dummy.url/api/",
+			ClientSecret: "dummy-client-secret",
+		}
+		client, err := config.Client(context.TODO())
+		if err == nil {
+			t.Error("accept invalid tenant")
+		}
+		if client != nil {
+			t.Error("return invalid client")
+		}
+	})
+	t.Run("invalidAMSBaseURL", func(t *testing.T) {
+		config := Config{
+			ClientID:     "dummy-client-id",
+			Tenant:       "dummy.tenant.com",
+			AMSBaseURL:   "dummy.url",
+			ClientSecret: "dummy-client-secret",
+		}
+		client, err := config.Client(context.TODO())
+		if err == nil {
+			t.Error("accept invalid base url")
+		}
+		if client != nil {
+			t.Error("return invalid client")
+		}
+	})
+	t.Run("positiveCase", func(t *testing.T) {
+		config := Config{
+			ClientID:     "dummy-client-id",
+			Tenant:       "dummy.tenant.com",
+			AMSBaseURL:   "http://dummy.url/api",
+			ClientSecret: "dummy-client-secret",
+		}
+		client, err := config.Client(context.TODO())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if client == nil {
+			t.Error("return nil client")
 		}
 	})
 }
