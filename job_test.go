@@ -115,3 +115,32 @@ func TestClient_GetOutputMediaAssets(t *testing.T) {
 		t.Errorf("unexpected output media asset. expected: %#v, actual: %#v", expected, actual)
 	}
 }
+
+func TestClient_GetJob(t *testing.T) {
+	expected := &Job{
+		ID:              "sample-job-id",
+		Name:            "Sample Job",
+		StartTime:       formatTime(time.Now()),
+		EndTime:         formatTime(time.Now()),
+		LastModified:    formatTime(time.Now()),
+		Priority:        1,
+		RunningDuration: 100,
+		State:           StateInitialized,
+	}
+
+	m := http.NewServeMux()
+	m.HandleFunc(fmt.Sprintf("/Jobs('%v')", expected.ID),
+		testJSONHandler(t, http.MethodGet, false, http.StatusOK, expected),
+	)
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	client := testClient(t, s.URL)
+	actual, err := client.GetJob(context.TODO(), expected.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("unexpected job. expected: %#v, actual: %#v", expected, actual)
+	}
+}
