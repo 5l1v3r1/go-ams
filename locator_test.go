@@ -158,3 +158,64 @@ func TestClient_GetLocators(t *testing.T) {
 		t.Errorf("unexpected locators. expected: %#v, actual: %#v", expected, actual)
 	}
 }
+
+func TestClient_GetLocatorsWithAsset(t *testing.T) {
+	m := http.NewServeMux()
+
+	expected := []Locator{
+		{
+			ID:                     "sample-locator-id-1",
+			ExpirationDateTime:     formatTime(time.Now()),
+			Type:                   LocatorSAS,
+			Path:                   "https://fake.url/upload?with=sas_tokens",
+			BaseURI:                "https://fake.url",
+			ContentAccessComponent: "",
+			AccessPolicyID:         "dummy-access-policy-id-1",
+			AssetID:                "sample-asset-id-1",
+			StartTime:              formatTime(time.Now()),
+			Name:                   "Sample Locator 1",
+		},
+		{
+			ID:                     "sample-locator-id-2",
+			ExpirationDateTime:     formatTime(time.Now()),
+			Type:                   LocatorSAS,
+			Path:                   "https://fake.url/upload?with=sas_tokens",
+			BaseURI:                "https://fake.url",
+			ContentAccessComponent: "",
+			AccessPolicyID:         "dummy-access-policy-id-2",
+			AssetID:                "sample-asset-id-1",
+			StartTime:              formatTime(time.Now()),
+			Name:                   "Sample Locator 2",
+		},
+	}
+	resp := struct {
+		Value []Locator
+	}{
+		Value: expected,
+	}
+	m.HandleFunc(fmt.Sprintf("/Assets('%v')/Locators", expected[0].AssetID), testJSONHandler(t, http.MethodGet, false, http.StatusOK, resp))
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	client := testClient(t, s.URL)
+
+	t.Run("invalidAssetID", func(t *testing.T) {
+		actual, err := client.GetLocatorsWithAsset(context.TODO(), "%#")
+		if err == nil {
+			t.Error("accept invalid assetID")
+		}
+		if actual != nil {
+			t.Errorf("return invalid locators")
+		}
+	})
+
+	t.Run("positiveCase", func(t *testing.T) {
+		actual, err := client.GetLocatorsWithAsset(context.TODO(), expected[0].AssetID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("unexpected locators. expected: %#v, actual: %#v", expected, actual)
+		}
+	})
+}
