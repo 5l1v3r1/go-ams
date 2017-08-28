@@ -29,7 +29,7 @@ func NewConfigFromFile(filepath string) (*Config, error) {
 
 	f, err := os.Open(filepath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "file open failed: %s", filepath)
+		return nil, errors.Wrap(err, "file open failed")
 	}
 	defer f.Close()
 
