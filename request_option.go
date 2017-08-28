@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -74,13 +73,6 @@ func withQuery(params url.Values) requestOption {
 				option.Params.Add(k, v)
 			}
 		}
-		return nil
-	}
-}
-
-func withForm(params url.Values) requestOption {
-	return func(option *requestOptions) error {
-		option.Body = strings.NewReader(params.Encode())
 		return nil
 	}
 }
