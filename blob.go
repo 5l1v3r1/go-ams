@@ -53,7 +53,6 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}
-	req.ContentLength = int64(len(blockListXML))
 
 	c.logger.Printf("[INFO] put block list ...")
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
