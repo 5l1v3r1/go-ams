@@ -3,6 +3,7 @@ package ams
 import (
 	"context"
 	"net/http"
+	"path"
 
 	"github.com/pkg/errors"
 )
@@ -91,7 +92,7 @@ func (c *Client) CreateAsset(ctx context.Context, name string) (*Asset, error) {
 }
 
 func (c *Client) GetAssetFiles(ctx context.Context, assetID string) ([]AssetFile, error) {
-	endpoint := toAssetResource(assetID) + "/Files"
+	endpoint := path.Join(toAssetResource(assetID), filesEndpoint)
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
@@ -128,5 +129,5 @@ func toAssetResource(assetID string) string {
 }
 
 func (c *Client) buildAssetURI(assetID string) string {
-	return c.buildURI(toResource(assetsEndpoint, assetID))
+	return c.buildURI(toAssetResource(assetID))
 }
