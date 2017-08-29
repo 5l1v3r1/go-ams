@@ -12,19 +12,21 @@ import (
 )
 
 func TestClient_GetAsset(t *testing.T) {
-	t.Run("invalidAssetID", func(t *testing.T) {
-		invalidID := "%"
+	t.Run("notFoundCase", func(t *testing.T) {
+		m := http.NewServeMux()
+		s := httptest.NewServer(m)
+		defer s.Close()
 
-		client := testClient(t, "http://dummy.url")
-		asset, err := client.GetAsset(context.TODO(), invalidID)
+		client := testClient(t, s.URL)
+
+		asset, err := client.GetAsset(context.TODO(), "not-found")
 		if err == nil {
-			t.Error("accept invalid ID")
+			t.Error("accept not found case")
 		}
 		if asset != nil {
-			t.Errorf("return invalid asset: %#v", asset)
+			t.Error("return invalid asset")
 		}
 	})
-
 	t.Run("positiveCase", func(t *testing.T) {
 		expected := testAsset("sample-id", "Sample")
 		m := http.NewServeMux()
