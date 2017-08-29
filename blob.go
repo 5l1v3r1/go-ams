@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,38 +13,77 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, file *os.File) ([]int, error) {
-	fileInfo, err := file.Stat()
+type Blob interface {
+	Reader() io.Reader
+	Size() int64
+}
+
+type FileBlob struct {
+	r    io.Reader
+	size int64
+}
+
+func NewFileBlob(file *os.File) (*FileBlob, error) {
+	if file == nil {
+		return nil, errors.New("missing file")
+	}
+
+	stat, err := file.Stat()
 	if err != nil {
-		return nil, errors.Wrap(err, "uploading file stat read failed")
+		return nil, errors.Wrap(err, "get file stat failed")
 	}
-	params := url.Values{
-		"comp":    {"block"},
-		"blockid": {buildBlockID(1)},
+	return &FileBlob{
+		r:    file,
+		size: stat.Size(),
+	}, nil
+}
+
+func (f *FileBlob) Reader() io.Reader {
+	return f.r
+}
+
+func (f *FileBlob) Size() int64 {
+	return f.size
+}
+
+func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blockID string) error {
+	if uploadURL == nil {
+		return errors.New("missing uploadURL")
 	}
+	if blob == nil {
+		return errors.New("missing blob")
+	}
+	if len(blockID) == 0 {
+		return errors.New("missing blockID")
+	}
+
+	params := url.Values{}
+	params.Set("comp", "block")
+	params.Set("blockid", buildBlockID(blockID))
+
 	req, err := c.newStorageRequest(ctx, http.MethodPut, *uploadURL,
 		withQuery(params),
 		withCustomHeader("x-ms-blob-type", "BlockBlob"),
 		withContentType("application/octet-stream"),
-		withBody(file),
+		withBody(blob.Reader()),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
+		return errors.Wrap(err, "request build failed")
 	}
-	req.ContentLength = fileInfo.Size()
+	req.ContentLength = blob.Size()
 
 	c.logger.Printf("[INFO] put blob ...")
 	if err := c.do(req, http.StatusCreated, nil); err != nil {
-		return nil, errors.Wrap(err, "request failed")
+		return errors.Wrap(err, "request failed")
 	}
 	c.logger.Printf("[INFO] completed")
-	return []int{1}, nil
+	return nil
 }
 
-func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList []int) error {
-	params := url.Values{
-		"comp": {"blocklist"},
-	}
+func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList []string) error {
+	params := url.Values{}
+	params.Set("comp", "blocklist")
+
 	blockListXML, err := buildBlockListXML(blockList)
 	if err != nil {
 		return errors.Wrap(err, "block list XML build failed")
@@ -69,12 +108,11 @@ var blockListXML *template.Template = template.Must(
 		Parse(`<?xml version="1.0" encoding="utf-8"?><BlockList>{{ range . }}<Latest>{{ . | buildBlockID }}</Latest>{{ end }}</BlockList>`),
 )
 
-func buildBlockID(blockID int) string {
-	s := fmt.Sprintf("BlockId%07d", blockID)
-	return base64.StdEncoding.EncodeToString([]byte(s))
+func buildBlockID(blockID string) string {
+	return base64.StdEncoding.EncodeToString([]byte(blockID))
 }
 
-func buildBlockListXML(blockList []int) ([]byte, error) {
+func buildBlockListXML(blockList []string) ([]byte, error) {
 	var b bytes.Buffer
 	if err := blockListXML.Execute(&b, blockList); err != nil {
 		return nil, errors.Wrap(err, "template execute failed")

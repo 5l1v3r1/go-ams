@@ -12,6 +12,10 @@ import (
 	"testing"
 )
 
+func TestNewFileBlob(t *testing.T) {
+
+}
+
 func TestClient_PutBlob(t *testing.T) {
 	fpath := filepath.Join("testdata", "test.mp4")
 	expected, err := ioutil.ReadFile(fpath)
@@ -61,35 +65,47 @@ func TestClient_PutBlob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer file.Close()
+
+	blob, err := NewFileBlob(file)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	u, err := url.ParseRequestURI(s.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("withInvalidFile", func(t *testing.T) {
-		blockList, err := client.PutBlob(context.TODO(), u, nil)
+	t.Run("withInvalidUploadURL", func(t *testing.T) {
+		err := client.PutBlob(context.TODO(), nil, blob, "test-block-id")
 		if err == nil {
-			t.Error("accept invalid file")
-		}
-		if len(blockList) > 0 {
-			t.Error("return invalid blockList")
+			t.Error("accept invalid upload url")
 		}
 	})
 
+	t.Run("withInvalidBlob", func(t *testing.T) {
+		err := client.PutBlob(context.TODO(), u, nil, "test-block-id")
+		if err == nil {
+			t.Error("accept invalid blob")
+		}
+	})
+	t.Run("withInvalidBlockID", func(t *testing.T) {
+		err := client.PutBlob(context.TODO(), u, blob, "")
+		if err == nil {
+			t.Error("accept invalid blockID")
+		}
+	})
 	t.Run("positiveCase", func(t *testing.T) {
-		blockList, err := client.PutBlob(context.TODO(), u, file)
+		err := client.PutBlob(context.TODO(), u, blob, "test-block-id")
 		if err != nil {
 			t.Error(err)
-		}
-		if len(blockList) == 0 {
-			t.Error("return empty blockList")
 		}
 	})
 }
 
 func TestClient_PutBlockList(t *testing.T) {
-	blockList := []int{1}
+	blockList := []string{"sample-block-id-1", "sample-block-id-2"}
 
 	expected, err := buildBlockListXML(blockList)
 	if err != nil {
