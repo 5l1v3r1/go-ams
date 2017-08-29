@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"path"
 
 	"github.com/pkg/errors"
 )
@@ -98,7 +99,7 @@ func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, medi
 }
 
 func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asset, error) {
-	endpoint := toJobResource(jobID) + "/OutputMediaAssets"
+	endpoint := path.Join(toJobResource(jobID), "OutputMediaAssets")
 	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "request build failed")
