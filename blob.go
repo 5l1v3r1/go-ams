@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,13 +13,12 @@ import (
 )
 
 type Blob interface {
-	Reader() io.Reader
-	Size() int64
+	FixedSizeReader
 }
 
 type FileBlob struct {
-	r    io.Reader
-	size int64
+	file *os.File
+	stat os.FileInfo
 }
 
 func NewFileBlob(file *os.File) (*FileBlob, error) {
@@ -33,17 +31,21 @@ func NewFileBlob(file *os.File) (*FileBlob, error) {
 		return nil, errors.Wrap(err, "get file stat failed")
 	}
 	return &FileBlob{
-		r:    file,
-		size: stat.Size(),
+		file: file,
+		stat: stat,
 	}, nil
 }
 
-func (f *FileBlob) Reader() io.Reader {
-	return f.r
+func (f *FileBlob) Read(p []byte) (int, error) {
+	return f.file.Read(p)
 }
 
 func (f *FileBlob) Size() int64 {
-	return f.size
+	return f.stat.Size()
+}
+
+func (f *FileBlob) Name() string {
+	return f.stat.Name()
 }
 
 func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blockID string) error {
@@ -65,7 +67,7 @@ func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blo
 		withQuery(params),
 		withCustomHeader("x-ms-blob-type", "BlockBlob"),
 		withContentType("application/octet-stream"),
-		withBody(blob.Reader()),
+		withBody(blob),
 	)
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
