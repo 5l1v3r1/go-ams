@@ -2,12 +2,18 @@ package ams
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
 )
+
+type FixedSizeReader interface {
+	io.Reader
+	Size() int64
+}
 
 func assertStatusCode(resp *http.Response, expected int) error {
 	if resp.StatusCode != expected {
