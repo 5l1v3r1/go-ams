@@ -18,6 +18,11 @@ const (
 	uploadDurationInMinute = 440.0
 )
 
+type Uploadable interface {
+	ams.FixedSizeReader
+	Name() string
+}
+
 func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.Asset, error) {
 	if client == nil {
 		return nil, errors.New("client missing")
@@ -28,21 +33,32 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 
 	blob, err := ams.NewFileBlob(file)
 	if err != nil {
-		return nil, errors.Wrap(err, "blob construct failed")
+		return nil, errors.Wrap(err, "file blob construct failed")
 	}
 
-	_, filename := path.Split(file.Name())
-	mimeType := mime.TypeByExtension(path.Ext(filename))
+	mimeType := mime.TypeByExtension(path.Ext(blob.Name()))
 	if !strings.HasPrefix(mimeType, "video/") {
-		return nil, errors.Errorf("invalid file type. expected video/*, actual '%s'", mimeType)
+		return nil, errors.Errorf("invalid file type. expected video/*, actual '%v'", mimeType)
 	}
 
-	asset, err := client.CreateAsset(ctx, filename)
+	return Upload(ctx, client, blob, mimeType)
+}
+
+func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mimeType string) (*ams.Asset, error) {
+	if client == nil {
+		return nil, errors.New("client missing")
+	}
+	if uploadable == nil {
+		return nil, errors.New("uploadable missing")
+	}
+
+	name := uploadable.Name()
+	asset, err := client.CreateAsset(ctx, name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "create asset failed. name='%s'", filename)
+		return nil, errors.Wrapf(err, "create asset failed. name='%s'", name)
 	}
 
-	assetFile, err := client.CreateAssetFile(ctx, asset.ID, filename, mimeType)
+	assetFile, err := client.CreateAssetFile(ctx, asset.ID, name, mimeType)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create asset file failed. assetID='%s'", asset.ID)
 	}
@@ -60,14 +76,14 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 	}
 	defer client.DeleteLocator(ctx, locator.ID)
 
-	uploadURL, err := locator.ToUploadURL(filename)
+	uploadURL, err := locator.ToUploadURL(name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "upload url build failed. name='%s'", uploadURL.String())
+		return nil, errors.Wrapf(err, "upload url build failed")
 	}
 
 	var blockList []string
 	blockID := "block-id-01"
-	if err := client.PutBlob(ctx, uploadURL, blob, blockID); err != nil {
+	if err := client.PutBlob(ctx, uploadURL, uploadable, blockID); err != nil {
 		return nil, errors.Wrap(err, "put blob failed")
 	}
 	blockList = append(blockList, blockID)
@@ -75,7 +91,7 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 		return nil, errors.Wrap(err, "put block list failed")
 	}
 
-	assetFile.ContentFileSize = fmt.Sprint(blob.Size())
+	assetFile.ContentFileSize = fmt.Sprint(uploadable.Size())
 	if err := client.UpdateAssetFile(ctx, assetFile); err != nil {
 		return nil, errors.Wrap(err, "update asset file failed")
 	}
