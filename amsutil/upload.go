@@ -26,9 +26,9 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 		return nil, errors.New("file missing")
 	}
 
-	stat, err := file.Stat()
+	blob, err := ams.NewFileBlob(file)
 	if err != nil {
-		return nil, errors.Wrapf(err, "upload file stat read failed")
+		return nil, errors.Wrap(err, "blob construct failed")
 	}
 
 	_, filename := path.Split(file.Name())
@@ -65,16 +65,17 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 		return nil, errors.Wrapf(err, "upload url build failed. name='%s'", uploadURL.String())
 	}
 
-	blockList, err := client.PutBlob(ctx, uploadURL, file)
-	if err != nil {
+	var blockList []string
+	blockID := "block-id-01"
+	if err := client.PutBlob(ctx, uploadURL, blob, blockID); err != nil {
 		return nil, errors.Wrap(err, "put blob failed")
 	}
-
+	blockList = append(blockList, blockID)
 	if err := client.PutBlockList(ctx, uploadURL, blockList); err != nil {
 		return nil, errors.Wrap(err, "put block list failed")
 	}
 
-	assetFile.ContentFileSize = fmt.Sprint(stat.Size())
+	assetFile.ContentFileSize = fmt.Sprint(blob.Size())
 	if err := client.UpdateAssetFile(ctx, assetFile); err != nil {
 		return nil, errors.Wrap(err, "update asset file failed")
 	}
