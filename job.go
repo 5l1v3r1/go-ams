@@ -99,34 +99,29 @@ func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, medi
 }
 
 func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asset, error) {
-	endpoint := path.Join(toJobResource(jobID), "OutputMediaAssets")
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
-	}
 	c.logger.Printf("[INFO] get job[#%s]'s output media assets ...", jobID)
+
+	endpoint := path.Join(toJobResource(jobID), "OutputMediaAssets")
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
-	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
+	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+		return nil, err
 	}
+
 	c.logger.Printf("[INFO] completed")
 	return out.Assets, nil
 }
 
 func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
+	c.logger.Printf("[INFO] get job #%s ...", jobID)
+
 	endpoint := toJobResource(jobID)
-	req, err := c.newRequest(ctx, http.MethodGet, endpoint)
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
+	var out Job
+	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+		return nil, err
 	}
 
-	c.logger.Printf("[INFO] get job #%s ...", jobID)
-	var out Job
-	if err := c.do(req, http.StatusOK, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
-	}
 	c.logger.Printf("[INFO] completed")
 	return &out, nil
 }
