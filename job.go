@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html"
-	"net/http"
 	"path"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -63,11 +60,12 @@ type Job struct {
 }
 
 func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, mediaProcessorID, configuration string) (*Job, error) {
+	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
+
 	jobName := fmt.Sprintf("EncodeJob#%s", assetID)
 	assetURI := c.buildAssetURI(assetID)
 	taskName := fmt.Sprintf("Task#%s", outputAssetName)
 	taskBody := buildTaskBody(outputAssetName)
-
 	params := map[string]interface{}{
 		"Name": jobName,
 		"InputMediaAssets": []MediaAsset{
@@ -82,18 +80,13 @@ func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, medi
 			},
 		},
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, jobsEndpoint, withJSON(params), withOData(true))
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
-	}
-
-	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
 	var out struct {
 		Data Job `json:"d"`
 	}
-	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
+	if err := c.post(ctx, jobsEndpoint, params, &out, withOData(true)); err != nil {
+		return nil, err
 	}
+
 	c.logger.Printf("[INFO] completed")
 	return &out.Data, nil
 }

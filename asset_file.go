@@ -24,6 +24,8 @@ type AssetFile struct {
 }
 
 func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType string) (*AssetFile, error) {
+	c.logger.Printf("[INFO] create asset[#%s] file ...", assetID)
+
 	params := map[string]interface{}{
 		"IsEncrypted":   false,
 		"IsPrimary":     false,
@@ -31,16 +33,11 @@ func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType st
 		"Name":          name,
 		"ParentAssetId": assetID,
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, filesEndpoint, withJSON(params))
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
+	var out AssetFile
+	if err := c.post(ctx, filesEndpoint, params, &out); err != nil {
+		return nil, err
 	}
 
-	c.logger.Printf("[INFO] create asset[#%s] file ...", assetID)
-	var out AssetFile
-	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
-	}
 	c.logger.Printf("[INFO] completed, new asset[#%s] file[#%s]", assetID, out.ID)
 	return &out, nil
 }

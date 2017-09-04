@@ -43,22 +43,19 @@ func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 }
 
 func (c *Client) CreateLocator(ctx context.Context, accessPolicyID, assetID string, startTime time.Time, locatorType int) (*Locator, error) {
+	c.logger.Printf("[INFO] create locator ...")
+
 	params := map[string]interface{}{
 		"AccessPolicyId": accessPolicyID,
 		"AssetId":        assetID,
 		"StartTime":      formatTime(startTime),
 		"Type":           locatorType,
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, locatorsEndpoint, withJSON(params))
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
+	var out Locator
+	if err := c.post(ctx, locatorsEndpoint, params, &out); err != nil {
+		return nil, err
 	}
 
-	c.logger.Printf("[INFO] create locator ...")
-	var out Locator
-	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
-	}
 	c.logger.Printf("[INFO] completed, new locator[#%s]", out.ID)
 	return &out, nil
 }

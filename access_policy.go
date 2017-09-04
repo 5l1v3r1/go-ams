@@ -29,21 +29,18 @@ type AccessPolicy struct {
 }
 
 func (c *Client) CreateAccessPolicy(ctx context.Context, name string, durationInMinutes float64, permissions int) (*AccessPolicy, error) {
+	c.logger.Printf("[INFO] create access policy [name=%#v,permissions=%d] ...", name, permissions)
+
 	params := map[string]interface{}{
 		"Name":              name,
 		"DurationInMinutes": durationInMinutes,
 		"Permissions":       permissions,
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, accessPoliciesEndpoint, withJSON(params))
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
+	var out AccessPolicy
+	if err := c.post(ctx, accessPoliciesEndpoint, params, &out); err != nil {
+		return nil, err
 	}
 
-	c.logger.Printf("[INFO] create access policy [name=%#v,permissions=%d] ...", name, permissions)
-	var out AccessPolicy
-	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
-	}
 	c.logger.Printf("[INFO] completed, new access policy[#%s]", out.ID)
 	return &out, nil
 }

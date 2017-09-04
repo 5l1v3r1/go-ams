@@ -213,6 +213,18 @@ func (c *Client) get(ctx context.Context, spath string, out interface{}) error {
 	return nil
 }
 
+func (c *Client) post(ctx context.Context, spath string, in interface{}, out interface{}, opts ...requestOption) error {
+	opts = append(opts, withJSON(in))
+	req, err := c.newRequest(ctx, http.MethodPost, spath, opts...)
+	if err != nil {
+		return errors.Wrap(err, "request construct failed")
+	}
+	if err := c.do(req, http.StatusCreated, out); err != nil {
+		return errors.Wrap(err, "request failed")
+	}
+	return nil
+}
+
 func (c *Client) buildURI(spath string) string {
 	u := *c.baseURL
 	u.Path = path.Join(u.Path, spath)

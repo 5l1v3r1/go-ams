@@ -70,18 +70,16 @@ func (c *Client) GetAssets(ctx context.Context) ([]Asset, error) {
 }
 
 func (c *Client) CreateAsset(ctx context.Context, name string) (*Asset, error) {
+	c.logger.Printf("[INFO] create asset [name=%#v] ...", name)
+
 	params := map[string]interface{}{
 		"Name": name,
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, assetsEndpoint, withJSON(params))
-	if err != nil {
-		return nil, errors.Wrap(err, "request build failed")
-	}
-	c.logger.Printf("[INFO] create asset [name=%#v] ...", name)
 	var out Asset
-	if err := c.do(req, http.StatusCreated, &out); err != nil {
-		return nil, errors.Wrap(err, "request failed")
+	if err := c.post(ctx, assetsEndpoint, params, &out); err != nil {
+		return nil, err
 	}
+
 	c.logger.Printf("[INFO] completed, new asset[#%s]", out.ID)
 	return &out, nil
 }
