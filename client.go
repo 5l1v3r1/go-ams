@@ -202,12 +202,12 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	return nil
 }
 
-func (c *Client) get(ctx context.Context, spath string, expectedCode int, out interface{}) error {
+func (c *Client) get(ctx context.Context, spath string, out interface{}) error {
 	req, err := c.newRequest(ctx, http.MethodGet, spath)
 	if err != nil {
 		return errors.Wrap(err, "request construct failed")
 	}
-	if err := c.do(req, expectedCode, out); err != nil {
+	if err := c.do(req, http.StatusOK, out); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
 	return nil

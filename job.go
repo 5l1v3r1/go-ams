@@ -105,7 +105,7 @@ func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asse
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
-	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, endpoint, &out); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
 
 	endpoint := toJobResource(jobID)
 	var out Job
-	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, endpoint, &out); err != nil {
 		return nil, err
 	}
 

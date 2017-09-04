@@ -81,7 +81,7 @@ func (c *Client) getLocators(ctx context.Context, endpoint string) ([]Locator, e
 	var out struct {
 		Locators []Locator `json:"value"`
 	}
-	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, endpoint, &out); err != nil {
 		return nil, err
 	}
 

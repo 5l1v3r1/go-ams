@@ -47,7 +47,7 @@ func (c *Client) GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 
 	endpoint := toAssetResource(assetID)
 	var out Asset
-	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, endpoint, &out); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +61,7 @@ func (c *Client) GetAssets(ctx context.Context) ([]Asset, error) {
 	var out struct {
 		Assets []Asset `json:"value"`
 	}
-	if err := c.get(ctx, assetsEndpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, assetsEndpoint, &out); err != nil {
 		return nil, err
 	}
 
@@ -93,7 +93,7 @@ func (c *Client) GetAssetFiles(ctx context.Context, assetID string) ([]AssetFile
 	var out struct {
 		AssetFiles []AssetFile `json:"value"`
 	}
-	if err := c.get(ctx, endpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, endpoint, &out); err != nil {
 		return nil, err
 	}
 

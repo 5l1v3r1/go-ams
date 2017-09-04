@@ -2,7 +2,6 @@ package ams
 
 import (
 	"context"
-	"net/http"
 )
 
 const (
@@ -24,7 +23,7 @@ func (c *Client) GetMediaProcessors(ctx context.Context) ([]MediaProcessor, erro
 	var out struct {
 		MediaProcessors []MediaProcessor `json:"value"`
 	}
-	if err := c.get(ctx, mediaProcessorsEndpoint, http.StatusOK, &out); err != nil {
+	if err := c.get(ctx, mediaProcessorsEndpoint, &out); err != nil {
 		return nil, err
 	}
 
