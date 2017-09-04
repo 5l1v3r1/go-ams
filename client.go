@@ -25,26 +25,51 @@ const (
 	StorageAPIVersion     = "2017-04-17"
 	DataServiceVersion    = "3.0"
 	MaxDataServiceVersion = "3.0"
-	version               = "0.2.0"
+	version               = "0.3.0"
 )
 
 var (
-	userAgent = fmt.Sprintf("Go/%s (%s-%s) go-ams/%s", runtime.Version(), runtime.GOARCH, runtime.GOOS, version)
+	defaultUserAgent = fmt.Sprintf("Go/%s (%s-%s) go-ams/%s", runtime.Version(), runtime.GOARCH, runtime.GOOS, version)
 )
 
-type Client struct {
-	UserAgent string
+type clientOptions struct {
+	UserAgent *string
+	Logger    *log.Logger
+	Debug     bool
+}
 
+type clientOption func(*clientOptions)
+
+func SetUserAgent(userAgent string) clientOption {
+	return func(options *clientOptions) {
+		options.UserAgent = &userAgent
+	}
+}
+
+func SetLogger(logger *log.Logger) clientOption {
+	return func(options *clientOptions) {
+		options.Logger = logger
+	}
+}
+
+func SetDebug(debug bool) clientOption {
+	return func(options *clientOptions) {
+		options.Debug = debug
+	}
+}
+
+type Client struct {
 	baseURL     *url.URL
 	tokenSource oauth2.TokenSource
 
 	httpClient *http.Client
 
-	logger *log.Logger
-	debug  bool
+	userAgent string
+	logger    *log.Logger
+	debug     bool
 }
 
-func NewClient(urlStr string, tokenSource oauth2.TokenSource) (*Client, error) {
+func NewClient(urlStr string, tokenSource oauth2.TokenSource, opts ...clientOption) (*Client, error) {
 	if tokenSource == nil {
 		return nil, errors.New("missing tokenSource")
 	}
@@ -52,23 +77,30 @@ func NewClient(urlStr string, tokenSource oauth2.TokenSource) (*Client, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "url parse failed: %s", urlStr)
 	}
-	defaultLogger := log.New(ioutil.Discard, "", log.LstdFlags)
+
+	var options clientOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	logger := options.Logger
+	if logger == nil {
+		logger = log.New(ioutil.Discard, "", log.LstdFlags|log.Lshortfile)
+	}
+	userAgent := options.UserAgent
+	if userAgent == nil {
+		userAgent = &defaultUserAgent
+	}
+
 	return &Client{
-		UserAgent:   userAgent,
 		baseURL:     u,
 		tokenSource: tokenSource,
-		httpClient:  http.DefaultClient,
-		logger:      defaultLogger,
-		debug:       false,
+
+		httpClient: http.DefaultClient,
+
+		userAgent: *userAgent,
+		logger:    logger,
+		debug:     options.Debug,
 	}, nil
-}
-
-func (c *Client) SetDebug(debug bool) {
-	c.debug = debug
-}
-
-func (c *Client) SetLogger(logger *log.Logger) {
-	c.logger = logger
 }
 
 func (c *Client) newCommonRequest(ctx context.Context, u *url.URL, method string, option *requestOptions, opts ...requestOption) (*http.Request, error) {
@@ -85,7 +117,7 @@ func (c *Client) newCommonRequest(ctx context.Context, u *url.URL, method string
 		return nil, err
 	}
 	req.Header = option.Header
-	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	req = req.WithContext(ctx)
 	return req, nil

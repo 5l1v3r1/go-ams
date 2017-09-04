@@ -48,10 +48,9 @@ func (c *Config) Client(ctx context.Context) (*Client, error) {
 		return nil, errors.Wrap(err, "authentication context construct failed")
 	}
 	ts := ac.TokenSourceFromClientCredentials(ctx, Resource, c.ClientID, c.ClientSecret)
-	client, err := NewClient(c.AMSBaseURL, ts)
+	client, err := NewClient(c.AMSBaseURL, ts, SetDebug(c.Debug))
 	if err != nil {
 		return nil, err
 	}
-	client.SetDebug(c.Debug)
 	return client, err
 }
