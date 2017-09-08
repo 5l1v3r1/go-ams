@@ -48,6 +48,30 @@ func (f *FileBlob) Name() string {
 	return f.stat.Name()
 }
 
+type BytesBlob struct {
+	name string
+	r    *bytes.Reader
+}
+
+func NewBytesBlob(name string, b []byte) *BytesBlob {
+	return &BytesBlob{
+		name: name,
+		r:    bytes.NewReader(b),
+	}
+}
+
+func (b *BytesBlob) Read(p []byte) (int, error) {
+	return b.r.Read(p)
+}
+
+func (b *BytesBlob) Size() int64 {
+	return int64(b.r.Len())
+}
+
+func (b *BytesBlob) Name() string {
+	return b.name
+}
+
 func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blockID string) error {
 	if uploadURL == nil {
 		return errors.New("missing uploadURL")
