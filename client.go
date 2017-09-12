@@ -155,12 +155,14 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 		}
 		c.logger.Print("[DEBUG] request header\n" + string(dump))
 
-		var b []byte
-		req.Body, b, err = sniffBody(req.Body)
-		if err != nil {
-			return errors.Wrap(err, "request body read failed")
+		if req.Body != nil {
+			var b []byte
+			req.Body, b, err = sniffBody(req.Body)
+			if err != nil {
+				return errors.Wrap(err, "request body read failed")
+			}
+			c.logger.Print("[DEBUG] request body\n" + string(b))
 		}
-		c.logger.Print("[DEBUG] request body\n" + string(b))
 	}
 
 	resp, err := c.httpClient.Do(req)
