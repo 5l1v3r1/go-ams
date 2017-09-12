@@ -42,13 +42,15 @@ func NewConfigFromFile(filepath string) (*Config, error) {
 	return &config, nil
 }
 
-func (c *Config) Client(ctx context.Context) (*Client, error) {
+func (c *Config) Client(ctx context.Context, opts ...clientOption) (*Client, error) {
 	ac, err := adal.NewAuthenticationContext(c.Tenant)
 	if err != nil {
 		return nil, errors.Wrap(err, "authentication context construct failed")
 	}
 	ts := ac.TokenSourceFromClientCredentials(ctx, Resource, c.ClientID, c.ClientSecret)
-	client, err := NewClient(c.AMSBaseURL, ts, SetDebug(c.Debug))
+
+	opts = append([]clientOption{SetDebug(c.Debug)}, opts...)
+	client, err := NewClient(c.AMSBaseURL, ts, opts...)
 	if err != nil {
 		return nil, err
 	}
