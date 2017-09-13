@@ -99,7 +99,8 @@ func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blo
 	req.ContentLength = blob.Size()
 
 	c.logger.Printf("[INFO] put blob ...")
-	if err := c.do(req, http.StatusCreated, nil); err != nil {
+
+	if err := c.doWithClient(http.DefaultClient, req, http.StatusCreated, nil); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
 	c.logger.Printf("[INFO] completed")
@@ -120,7 +121,7 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 	}
 
 	c.logger.Printf("[INFO] put block list ...")
-	if err := c.do(req, http.StatusCreated, nil); err != nil {
+	if err := c.doWithClient(http.DefaultClient, req, http.StatusCreated, nil); err != nil {
 		return errors.Wrap(err, "request failed")
 	}
 	c.logger.Printf("[INFO] completed")

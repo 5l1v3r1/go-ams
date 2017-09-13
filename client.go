@@ -59,8 +59,7 @@ func SetDebug(debug bool) clientOption {
 }
 
 type Client struct {
-	baseURL     *url.URL
-	tokenSource oauth2.TokenSource
+	baseURL *url.URL
 
 	httpClient *http.Client
 
@@ -92,10 +91,9 @@ func NewClient(urlStr string, tokenSource oauth2.TokenSource, opts ...clientOpti
 	}
 
 	return &Client{
-		baseURL:     u,
-		tokenSource: tokenSource,
+		baseURL: u,
 
-		httpClient: http.DefaultClient,
+		httpClient: oauth2.NewClient(context.TODO(), tokenSource),
 
 		userAgent: *userAgent,
 		logger:    logger,
@@ -133,12 +131,6 @@ func (c *Client) newRequest(ctx context.Context, method, spath string, opts ...r
 		return nil, err
 	}
 
-	token, err := c.tokenSource.Token()
-	if err != nil {
-		return nil, errors.Wrapf(err, "get access token failed")
-	}
-	token.SetAuthHeader(req)
-
 	return req, nil
 }
 
@@ -147,7 +139,7 @@ func (c *Client) newStorageRequest(ctx context.Context, method string, u url.URL
 	return c.newCommonRequest(ctx, &u, method, option, opts...)
 }
 
-func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
+func (c *Client) doWithClient(httpClient *http.Client, req *http.Request, expectedCode int, out interface{}) error {
 	if c.debug {
 		dump, err := httputil.DumpRequestOut(req, false)
 		if err != nil {
@@ -165,7 +157,7 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 		}
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -202,6 +194,10 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	}
 
 	return nil
+}
+
+func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
+	return c.doWithClient(c.httpClient, req, expectedCode, out)
 }
 
 func (c *Client) get(ctx context.Context, spath string, out interface{}) error {
