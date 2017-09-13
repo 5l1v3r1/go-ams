@@ -25,7 +25,7 @@ func TestUploadFile(t *testing.T) {
 		t.Errorf("file uploading failed: %v", err)
 	}
 	if asset == nil {
-		t.Errorf("return invalid asset")
+		t.Fatal("return invalid asset")
 	}
 
 	if err := AMS.DeleteAsset(ctx, asset.ID); err != nil {
