@@ -13,10 +13,9 @@ import (
 
 const (
 	publishAccessPolicyName = "ViewPolicy"
-	publishDurationInMinute = 43200
 )
 
-func Publish(ctx context.Context, client *ams.Client, assetID string) (string, error) {
+func Publish(ctx context.Context, client *ams.Client, assetID string, minutes float64) (string, error) {
 	if client == nil {
 		return "", errors.New("missing client")
 	}
@@ -31,7 +30,7 @@ func Publish(ctx context.Context, client *ams.Client, assetID string) (string, e
 
 	success := false
 
-	accessPolicy, err := client.CreateAccessPolicy(ctx, publishAccessPolicyName, publishDurationInMinute, ams.PermissionRead)
+	accessPolicy, err := client.CreateAccessPolicy(ctx, publishAccessPolicyName, minutes, ams.PermissionRead)
 	if err != nil {
 		return "", errors.Wrap(err, "create access policy failed")
 	}
