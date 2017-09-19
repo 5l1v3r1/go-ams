@@ -56,6 +56,10 @@ func Publish(ctx context.Context, client *ams.Client, assetID string, minutes fl
 		return "", errors.Wrap(err, "get asset files failed")
 	}
 
+	if len(assetFiles) == 0 {
+		return "", errors.Errorf("asset files not found. asset[#%v] is empty", asset.ID)
+	}
+
 	manifest := findAssetManifest(assetFiles)
 
 	u, err := url.ParseRequestURI(locator.Path)
