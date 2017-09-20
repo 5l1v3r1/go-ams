@@ -54,5 +54,5 @@ func (c *Config) Client(ctx context.Context, opts ...clientOption) (*Client, err
 	if err != nil {
 		return nil, err
 	}
-	return client, err
+	return client, nil
 }
