@@ -19,8 +19,27 @@ const (
 )
 
 type Uploadable interface {
-	ams.FixedSizeReader
 	Name() string
+	Size() int64
+	Blobs() []ams.Blob
+}
+
+type uploadable struct {
+	name  string
+	size  int64
+	blobs []ams.Blob
+}
+
+func (u *uploadable) Name() string      { return u.name }
+func (u *uploadable) Size() int64       { return u.size }
+func (u *uploadable) Blobs() []ams.Blob { return u.blobs }
+
+func newUploadbleSingle(name string, blob ams.Blob) *uploadable {
+	return &uploadable{
+		name:  name,
+		size:  blob.Size(),
+		blobs: []ams.Blob{blob},
+	}
 }
 
 func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.Asset, error) {
@@ -41,7 +60,7 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 		return nil, errors.Errorf("invalid file type. expected video/*, actual '%v'", mimeType)
 	}
 
-	return Upload(ctx, client, blob, mimeType)
+	return Upload(ctx, client, newUploadbleSingle(blob.Name(), blob), mimeType)
 }
 
 func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mimeType string) (*ams.Asset, error) {
@@ -82,11 +101,14 @@ func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mime
 	}
 
 	var blockList []string
-	blockID := "block-id-01"
-	if err := client.PutBlob(ctx, uploadURL, uploadable, blockID); err != nil {
-		return nil, errors.Wrap(err, "put blob failed")
+	for i, blob := range uploadable.Blobs() {
+		blockID := fmt.Sprintf("block-id-%v", i+1)
+		if err := client.PutBlob(ctx, uploadURL, blob, blockID); err != nil {
+			return nil, errors.Wrap(err, "put blob failed")
+		}
+		blockList = append(blockList, blockID)
 	}
-	blockList = append(blockList, blockID)
+
 	if err := client.PutBlockList(ctx, uploadURL, blockList); err != nil {
 		return nil, errors.Wrap(err, "put block list failed")
 	}
