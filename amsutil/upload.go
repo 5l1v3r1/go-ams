@@ -34,7 +34,7 @@ func (u *uploadable) Name() string      { return u.name }
 func (u *uploadable) Size() int64       { return u.size }
 func (u *uploadable) Blobs() []ams.Blob { return u.blobs }
 
-func newUploadbleSingle(name string, blob ams.Blob) *uploadable {
+func NewUploadble(name string, blob ams.Blob) Uploadable {
 	return &uploadable{
 		name:  name,
 		size:  blob.Size(),
@@ -50,17 +50,17 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 		return nil, errors.New("file missing")
 	}
 
-	blob, err := ams.NewFileBlob(file)
+	fblob, err := ams.NewFileBlob(file)
 	if err != nil {
 		return nil, errors.Wrap(err, "file blob construct failed")
 	}
 
-	mimeType := mime.TypeByExtension(path.Ext(blob.Name()))
+	mimeType := mime.TypeByExtension(path.Ext(fblob.Name()))
 	if !strings.HasPrefix(mimeType, "video/") {
 		return nil, errors.Errorf("invalid file type. expected video/*, actual '%v'", mimeType)
 	}
 
-	return Upload(ctx, client, newUploadbleSingle(blob.Name(), blob), mimeType)
+	return Upload(ctx, client, NewUploadble(fblob.Name(), fblob), mimeType)
 }
 
 func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mimeType string) (*ams.Asset, error) {
