@@ -16,12 +16,12 @@ type Blob interface {
 	FixedSizeReader
 }
 
-type FileBlob struct {
+type fileBlob struct {
 	file *os.File
 	stat os.FileInfo
 }
 
-func NewFileBlob(file *os.File) (*FileBlob, error) {
+func NewFileBlob(file *os.File) (*fileBlob, error) {
 	if file == nil {
 		return nil, errors.New("missing file")
 	}
@@ -30,21 +30,21 @@ func NewFileBlob(file *os.File) (*FileBlob, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "get file stat failed")
 	}
-	return &FileBlob{
+	return &fileBlob{
 		file: file,
 		stat: stat,
 	}, nil
 }
 
-func (f *FileBlob) Read(p []byte) (int, error) {
+func (f *fileBlob) Read(p []byte) (int, error) {
 	return f.file.Read(p)
 }
 
-func (f *FileBlob) Size() int64 {
+func (f *fileBlob) Size() int64 {
 	return f.stat.Size()
 }
 
-func (f *FileBlob) Name() string {
+func (f *fileBlob) Name() string {
 	return f.stat.Name()
 }
 
