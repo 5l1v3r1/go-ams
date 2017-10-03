@@ -8,14 +8,17 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"golang.org/x/oauth2"
 )
 
-func testTokenSource() oauth2.TokenSource {
-	return oauth2.StaticTokenSource(&oauth2.Token{
-		AccessToken: "<<DUMMY ACCESS TOKEN>>",
-		TokenType:   "Bearer",
-	})
+func testAuthorizedClient() *http.Client {
+	return oauth2.NewClient(context.TODO(),
+		oauth2.StaticTokenSource(&oauth2.Token{
+			TokenType:   "Bearer",
+			AccessToken: "<<DUMMY>>",
+		}))
 }
 
 func testAsset(id, name string) Asset {
@@ -53,7 +56,7 @@ func testWrapValue(value interface{}) interface{} {
 }
 
 func testClient(t *testing.T, urlStr string) *Client {
-	client, err := NewClient(urlStr, testTokenSource())
+	client, err := NewClient(urlStr, testAuthorizedClient())
 	if err != nil {
 		t.Fatal(err)
 	}

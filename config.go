@@ -47,10 +47,13 @@ func (c *Config) Client(ctx context.Context, opts ...clientOption) (*Client, err
 	if err != nil {
 		return nil, errors.Wrap(err, "authentication context construct failed")
 	}
-	ts := ac.TokenSourceFromClientCredentials(ctx, Resource, c.ClientID, c.ClientSecret)
+	httpClient, err := ac.Client(ctx, Resource, c.ClientID, c.ClientSecret)
+	if err != nil {
+		return nil, errors.Wrap(err, "httpClient construct failed")
+	}
 
 	opts = append([]clientOption{SetDebug(c.Debug)}, opts...)
-	client, err := NewClient(c.AMSBaseURL, ts, opts...)
+	client, err := NewClient(c.AMSBaseURL, httpClient, opts...)
 	if err != nil {
 		return nil, err
 	}

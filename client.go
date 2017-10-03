@@ -16,7 +16,6 @@ import (
 
 	"github.com/k0kubun/pp"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 )
 
 const (
@@ -61,16 +60,16 @@ func SetDebug(debug bool) clientOption {
 type Client struct {
 	baseURL *url.URL
 
-	httpClient *http.Client
+	authorizedClient *http.Client
 
 	userAgent string
 	logger    *log.Logger
 	debug     bool
 }
 
-func NewClient(urlStr string, tokenSource oauth2.TokenSource, opts ...clientOption) (*Client, error) {
-	if tokenSource == nil {
-		return nil, errors.New("missing tokenSource")
+func NewClient(urlStr string, authorizedClient *http.Client, opts ...clientOption) (*Client, error) {
+	if authorizedClient == nil {
+		return nil, errors.New("missing authorizedClient")
 	}
 	u, err := url.ParseRequestURI(urlStr)
 	if err != nil {
@@ -93,7 +92,7 @@ func NewClient(urlStr string, tokenSource oauth2.TokenSource, opts ...clientOpti
 	return &Client{
 		baseURL: u,
 
-		httpClient: oauth2.NewClient(context.TODO(), tokenSource),
+		authorizedClient: authorizedClient,
 
 		userAgent: *userAgent,
 		logger:    logger,
@@ -197,7 +196,7 @@ func (c *Client) doWithClient(httpClient *http.Client, req *http.Request, expect
 }
 
 func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error {
-	return c.doWithClient(c.httpClient, req, expectedCode, out)
+	return c.doWithClient(c.authorizedClient, req, expectedCode, out)
 }
 
 func (c *Client) get(ctx context.Context, spath string, out interface{}) error {
