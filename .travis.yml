@@ -1,0 +1,7 @@
+language: go
+go:
+  - 1.9
+
+install:
+  - go get -u github.com/dep/cmd/dep
+  - dep ensure
