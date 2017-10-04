@@ -69,7 +69,7 @@ func TestClient_EncodeAsset(t *testing.T) {
 
 	client = testClient(t, s.URL)
 
-	job, err := client.EncodeAsset(context.TODO(), assetID, outputAssetName, mediaProcessorID, configuration)
+	job, err := client.AddEncodeJob(context.TODO(), assetID, outputAssetName, mediaProcessorID, configuration)
 	if err != nil {
 		t.Error(err)
 	}

@@ -26,7 +26,7 @@ func Encode(ctx context.Context, client *ams.Client, assetID, mediaProcessorID, 
 		return nil, nil, errors.Wrapf(err, "get asset failed. assetID='%s'", assetID)
 	}
 
-	job, err := client.EncodeAsset(ctx, asset.ID, "[ENCODED]"+asset.Name, mediaProcessorID, configuration)
+	job, err := client.AddEncodeJob(ctx, asset.ID, "[ENCODED]"+asset.Name, mediaProcessorID, configuration)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "encode asset failed")
 	}

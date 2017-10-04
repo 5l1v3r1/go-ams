@@ -59,7 +59,7 @@ type Job struct {
 	State           int     `json:"State"`
 }
 
-func (c *Client) EncodeAsset(ctx context.Context, assetID, outputAssetName, mediaProcessorID, configuration string) (*Job, error) {
+func (c *Client) AddEncodeJob(ctx context.Context, assetID, outputAssetName, mediaProcessorID, configuration string) (*Job, error) {
 	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
 
 	jobName := fmt.Sprintf("EncodeJob#%s", assetID)
