@@ -7,11 +7,11 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	authorizedCliet := testAuthorizedClient()
+	authorizedClient := testAuthorizedClient()
 	dummyURL := "http://example.ams.net/"
 
 	t.Run("withInvalidURL", func(t *testing.T) {
-		client, err := NewClient("", authorizedCliet)
+		client, err := NewClient("", authorizedClient)
 		if err == nil {
 			t.Errorf("accept invalid url")
 		}
@@ -31,7 +31,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("positiveTest", func(t *testing.T) {
-		client, err := NewClient(dummyURL, authorizedCliet)
+		client, err := NewClient(dummyURL, authorizedClient)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -42,7 +42,7 @@ func TestNewClient(t *testing.T) {
 
 	t.Run("withUserAgent", func(t *testing.T) {
 		expected := "test"
-		client, err := NewClient(dummyURL, authorizedCliet, SetUserAgent(expected))
+		client, err := NewClient(dummyURL, authorizedClient, SetUserAgent(expected))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +56,7 @@ func TestNewClient(t *testing.T) {
 
 	t.Run("withLogger", func(t *testing.T) {
 		expected := log.New(ioutil.Discard, "dummy-logger: ", log.LstdFlags)
-		client, err := NewClient(dummyURL, authorizedCliet, SetLogger(expected))
+		client, err := NewClient(dummyURL, authorizedClient, SetLogger(expected))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -70,7 +70,7 @@ func TestNewClient(t *testing.T) {
 
 	t.Run("withDebug", func(t *testing.T) {
 		expected := true
-		client, err := NewClient(dummyURL, authorizedCliet, SetDebug(expected))
+		client, err := NewClient(dummyURL, authorizedClient, SetDebug(expected))
 		if err != nil {
 			t.Fatal(err)
 		}
