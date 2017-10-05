@@ -2,13 +2,11 @@ package ams
 
 import (
 	"context"
+	"encoding/xml"
 	"fmt"
-	"html"
 	"path"
-)
 
-const (
-	taskBodyTemplate = `<?xml version="1.0" encoding="utf-8"?><taskBody><inputAsset>JobInputAsset(0)</inputAsset><outputAsset assetName="%s">JobOutputAsset(0)</outputAsset></taskBody>`
+	"github.com/pkg/errors"
 )
 
 const (
@@ -60,7 +58,17 @@ func (c *Client) AddEncodeJob(ctx context.Context, assetID, outputAssetName, med
 	jobName := fmt.Sprintf("EncodeJob#%s", assetID)
 	assetURI := c.buildAssetURI(assetID)
 	taskName := fmt.Sprintf("Task#%s", outputAssetName)
-	taskBody := buildTaskBody(outputAssetName)
+	taskBody, err := xml.Marshal(TaskBody{
+		InputAsset: AssetTag{Asset: jobInputAsset},
+		OutputAsset: AssetTag{
+			Asset: jobOutputAsset,
+			Name:  outputAssetName,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "taskBody xml marshal failed")
+	}
+
 	params := map[string]interface{}{
 		"Name": jobName,
 		"InputMediaAssets": []MediaAsset{
@@ -71,7 +79,7 @@ func (c *Client) AddEncodeJob(ctx context.Context, assetID, outputAssetName, med
 				Name:             taskName,
 				Configuration:    configuration,
 				MediaProcessorID: mediaProcessorID,
-				TaskBody:         taskBody,
+				TaskBody:         string(taskBody),
 			},
 		},
 	}
@@ -112,10 +120,6 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*Job, error) {
 
 	c.logger.Printf("[INFO] completed")
 	return &out, nil
-}
-
-func buildTaskBody(assetName string) string {
-	return fmt.Sprintf(taskBodyTemplate, html.EscapeString(assetName))
 }
 
 func toJobResource(jobID string) string {

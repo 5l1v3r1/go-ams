@@ -3,6 +3,7 @@ package ams
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -14,7 +15,17 @@ import (
 func TestClient_EncodeAsset(t *testing.T) {
 	assetID := "sample-id"
 	outputAssetName := "__sample-output-asset-name__"
-	taskBody := buildTaskBody(outputAssetName)
+	taskBody, err := xml.Marshal(TaskBody{
+		InputAsset: AssetTag{Asset: jobInputAsset},
+		OutputAsset: AssetTag{
+			Asset: jobOutputAsset,
+			Name:  outputAssetName,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	mediaProcessorID := "sample-media-processor-id"
 	configuration := "Adaptive Streaming"
 
@@ -55,8 +66,8 @@ func TestClient_EncodeAsset(t *testing.T) {
 			if task.MediaProcessorID != mediaProcessorID {
 				t.Errorf("unexpected MediaProcessorID. expected: %v, actual: %v", mediaProcessorID, task.MediaProcessorID)
 			}
-			if task.TaskBody != taskBody {
-				t.Errorf("unexpected TaskBody. expected: %v, actual: %v", taskBody, task.TaskBody)
+			if task.TaskBody != string(taskBody) {
+				t.Errorf("unexpected TaskBody. expected: %v, actual: %v", string(taskBody), task.TaskBody)
 			}
 		}
 
