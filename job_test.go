@@ -3,7 +3,6 @@ package ams
 import (
 	"context"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,19 +14,7 @@ import (
 func TestClient_EncodeAsset(t *testing.T) {
 	assetID := "sample-id"
 	outputAssetName := "__sample-output-asset-name__"
-	taskBody, err := xml.Marshal(TaskBody{
-		InputAsset: AssetTag{Asset: jobInputAsset},
-		OutputAsset: AssetTag{
-			Asset: jobOutputAsset,
-			Name:  outputAssetName,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	mediaProcessorID := "sample-media-processor-id"
-	configuration := "Adaptive Streaming"
 
 	var client *Client
 
@@ -59,17 +46,6 @@ func TestClient_EncodeAsset(t *testing.T) {
 		if len(actual.Tasks) == 0 {
 			t.Error("Tasks is required")
 		}
-		for _, task := range actual.Tasks {
-			if task.Configuration != configuration {
-				t.Errorf("unexpected Configuration. expected: %v, actual: %v", configuration, task.Configuration)
-			}
-			if task.MediaProcessorID != mediaProcessorID {
-				t.Errorf("unexpected MediaProcessorID. expected: %v, actual: %v", mediaProcessorID, task.MediaProcessorID)
-			}
-			if task.TaskBody != string(taskBody) {
-				t.Errorf("unexpected TaskBody. expected: %v, actual: %v", string(taskBody), task.TaskBody)
-			}
-		}
 
 		w.WriteHeader(http.StatusCreated)
 		rawJob := `{"Id":"sample-job-id","Name":"sample-job-name","StartTime":"2017-08-10T02:52:53Z","EndTime":"","LastModified":"2017-08-10T02:52:53Z","Priority":1,"RunningDuration":0.0,"State":0}`
@@ -80,7 +56,7 @@ func TestClient_EncodeAsset(t *testing.T) {
 
 	client = testClient(t, s.URL)
 
-	job, err := client.AddEncodeJob(context.TODO(), assetID, outputAssetName, mediaProcessorID, configuration)
+	job, err := client.AddEncodeJob(context.TODO(), assetID, mediaProcessorID, outputAssetName)
 	if err != nil {
 		t.Error(err)
 	}

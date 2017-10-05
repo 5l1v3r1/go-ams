@@ -52,19 +52,11 @@ type Job struct {
 	State           int     `json:"State"`
 }
 
-func (c *Client) AddEncodeJob(ctx context.Context, assetID, outputAssetName, mediaProcessorID, configuration string) (*Job, error) {
-	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
-
-	jobName := fmt.Sprintf("EncodeJob#%s", assetID)
+func (c *Client) addJob(ctx context.Context, assetID, mediaProcessorID, configuration string, taskBody TaskBody) (*Job, error) {
+	jobName := fmt.Sprintf("Job - Asset %s", assetID)
 	assetURI := c.buildAssetURI(assetID)
-	taskName := fmt.Sprintf("Task#%s", outputAssetName)
-	taskBody, err := xml.Marshal(TaskBody{
-		InputAsset: AssetTag{Asset: jobInputAsset},
-		OutputAsset: AssetTag{
-			Asset: jobOutputAsset,
-			Name:  outputAssetName,
-		},
-	})
+	taskName := fmt.Sprintf("Task - Asset %s", assetID)
+	taskBodyXML, err := xml.Marshal(taskBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "taskBody xml marshal failed")
 	}
@@ -79,7 +71,7 @@ func (c *Client) AddEncodeJob(ctx context.Context, assetID, outputAssetName, med
 				Name:             taskName,
 				Configuration:    configuration,
 				MediaProcessorID: mediaProcessorID,
-				TaskBody:         string(taskBody),
+				TaskBody:         string(taskBodyXML),
 			},
 		},
 	}
@@ -89,9 +81,32 @@ func (c *Client) AddEncodeJob(ctx context.Context, assetID, outputAssetName, med
 	if err := c.post(ctx, jobsEndpoint, params, &out, withOData(true)); err != nil {
 		return nil, err
 	}
-
-	c.logger.Printf("[INFO] completed")
 	return &out.Data, nil
+}
+
+func (c *Client) AddEncodeJob(ctx context.Context, assetID, mediaProcessorID, outputAssetName string) (*Job, error) {
+	configuration := "Adaptive Streaming"
+
+	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
+
+	taskBody := TaskBody{
+		InputAsset: AssetTag{Asset: jobInputAsset},
+		OutputAsset: AssetTag{
+			Asset: jobOutputAsset,
+			Name:  outputAssetName,
+		},
+	}
+	job, err := c.addJob(ctx, assetID, mediaProcessorID, configuration, taskBody)
+	if err != nil {
+		return nil, err
+	}
+	c.logger.Printf("[INFO] completed")
+	return job, nil
+}
+
+func (c *Client) AddThumbnailJob(ctx context.Context, assetID string) (*Job, error) {
+
+	return nil, nil
 }
 
 func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asset, error) {
