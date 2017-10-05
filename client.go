@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"path"
 	"runtime"
 
@@ -76,13 +77,19 @@ func NewClient(urlStr string, authorizedClient *http.Client, opts ...clientOptio
 		return nil, errors.Wrapf(err, "url parse failed: %s", urlStr)
 	}
 
+	globalDebug := len(os.Getenv("GO_AMS_DEBUG")) != 0
+
 	var options clientOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
 	logger := options.Logger
 	if logger == nil {
-		logger = log.New(ioutil.Discard, "", log.LstdFlags|log.Lshortfile)
+		if globalDebug {
+			logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
+		} else {
+			logger = log.New(ioutil.Discard, "", log.LstdFlags|log.Lshortfile)
+		}
 	}
 	userAgent := options.UserAgent
 	if userAgent == nil {
@@ -96,7 +103,7 @@ func NewClient(urlStr string, authorizedClient *http.Client, opts ...clientOptio
 
 		userAgent: *userAgent,
 		logger:    logger,
-		debug:     options.Debug,
+		debug:     options.Debug || globalDebug,
 	}, nil
 }
 
