@@ -12,7 +12,9 @@ const (
 )
 
 const (
-	jobsEndpoint = "Jobs"
+	jobsEndpoint   = "Jobs"
+	jobInputAsset  = "JobInputAsset(0)"
+	jobOutputAsset = "JobOutputAsset(0)"
 )
 
 const (
@@ -39,13 +41,6 @@ func NewMediaAsset(uri string) MediaAsset {
 			URI: uri,
 		},
 	}
-}
-
-type Task struct {
-	Name             string `json:"Name"`
-	Configuration    string `json:"Configuration"`
-	MediaProcessorID string `json:"MediaProcessorId"`
-	TaskBody         string `json:"TaskBody"`
 }
 
 type Job struct {
