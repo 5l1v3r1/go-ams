@@ -104,9 +104,40 @@ func (c *Client) AddEncodeJob(ctx context.Context, assetID, mediaProcessorID, ou
 	return job, nil
 }
 
-func (c *Client) AddThumbnailJob(ctx context.Context, assetID string) (*Job, error) {
+func (c *Client) AddThumbnailJob(ctx context.Context, assetID, mediaProcessorID string) (*Job, error) {
+	configuration := `{
+  "Version": 1.0,
+  "Codecs": [
+    {
+      "PngLayers": [
+        {
+          "Type": "PngLayer",
+          "Width": "100%",
+          "Height": "100%"
+        }
+      ],
+      "Start": "{Best}",
+      "Type": "PngImage"
+    }
+  ],
+  "Outputs": [
+    {
+      "FileName": "{Basename}_{Index}{Extension}",
+      "Format": {
+        "Type": "PngFormat"
+      }
+    }
+  ]
+}`
+	c.logger.Printf("[INFO] post thumbnail create [#%s] job ...", assetID)
 
-	return nil, nil
+	taskBody := newTaskBody()
+	job, err := c.addJob(ctx, assetID, mediaProcessorID, configuration, *taskBody)
+	if err != nil {
+		return nil, err
+	}
+	c.logger.Printf("[INFO] completed")
+	return job, nil
 }
 
 func (c *Client) GetOutputMediaAssets(ctx context.Context, jobID string) ([]Asset, error) {

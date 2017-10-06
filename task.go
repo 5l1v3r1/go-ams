@@ -19,3 +19,10 @@ type AssetTag struct {
 	Asset string `xml:",chardata"`
 	Name  string `xml:"assetName,attr,omitempty"`
 }
+
+func newTaskBody() *TaskBody {
+	return &TaskBody{
+		InputAsset:  AssetTag{Asset: jobInputAsset},
+		OutputAsset: AssetTag{Asset: jobOutputAsset},
+	}
+}
