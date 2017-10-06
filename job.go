@@ -52,7 +52,7 @@ type Job struct {
 	State           int     `json:"State"`
 }
 
-func (c *Client) addJob(ctx context.Context, assetID, mediaProcessorID, configuration string, taskBody TaskBody) (*Job, error) {
+func (c *Client) addJob(ctx context.Context, assetID, mediaProcessorID, configuration string, taskBody *TaskBody) (*Job, error) {
 	jobName := fmt.Sprintf("Job - Asset %s", assetID)
 	assetURI := c.buildAssetURI(assetID)
 	taskName := fmt.Sprintf("Task - Asset %s", assetID)
@@ -89,13 +89,8 @@ func (c *Client) AddEncodeJob(ctx context.Context, assetID, mediaProcessorID, ou
 
 	c.logger.Printf("[INFO] post encode asset[#%s] job ...", assetID)
 
-	taskBody := TaskBody{
-		InputAsset: AssetTag{Asset: jobInputAsset},
-		OutputAsset: AssetTag{
-			Asset: jobOutputAsset,
-			Name:  outputAssetName,
-		},
-	}
+	taskBody := newTaskBody()
+	taskBody.OutputAsset.Name = outputAssetName
 	job, err := c.addJob(ctx, assetID, mediaProcessorID, configuration, taskBody)
 	if err != nil {
 		return nil, err
@@ -132,7 +127,7 @@ func (c *Client) AddThumbnailJob(ctx context.Context, assetID, mediaProcessorID 
 	c.logger.Printf("[INFO] post thumbnail create [#%s] job ...", assetID)
 
 	taskBody := newTaskBody()
-	job, err := c.addJob(ctx, assetID, mediaProcessorID, configuration, *taskBody)
+	job, err := c.addJob(ctx, assetID, mediaProcessorID, configuration, taskBody)
 	if err != nil {
 		return nil, err
 	}
