@@ -4,12 +4,37 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 	"time"
 )
+
+type jobRequest struct {
+	Name             string
+	InputMediaAssets []MediaAsset
+	Tasks            []Task
+}
+
+func verifyJobRequest(t *testing.T, r io.Reader) *jobRequest {
+	var jobRequest jobRequest
+	if err := json.NewDecoder(r).Decode(&jobRequest); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(jobRequest.Name) == 0 {
+		t.Error("Name is required")
+	}
+	if len(jobRequest.InputMediaAssets) == 0 {
+		t.Error("InputMediaAssets is required")
+	}
+	if len(jobRequest.Tasks) == 0 {
+		t.Error("Tasks is required")
+	}
+	return &jobRequest
+}
 
 func TestClient_AddEncodeJob(t *testing.T) {
 	assetID := "sample-id"
@@ -23,30 +48,17 @@ func TestClient_AddEncodeJob(t *testing.T) {
 		testRequestMethod(t, r, http.MethodPost)
 		testAMSHeader(t, r.Header, true)
 
-		var actual struct {
-			Name             string
-			InputMediaAssets []MediaAsset
-			Tasks            []Task
-		}
-		if err := json.NewDecoder(r.Body).Decode(&actual); err != nil {
-			t.Fatal(err)
-		}
-
-		if len(actual.Name) == 0 {
-			t.Error("Name is required")
-		}
-		if len(actual.InputMediaAssets) == 0 {
-			t.Error("InputMediaAssets is required")
-		}
+		actual := verifyJobRequest(t, r.Body)
 		for _, ma := range actual.InputMediaAssets {
 			if assetURI := client.buildAssetURI(assetID); ma.MetaData.URI != assetURI {
 				t.Errorf("unexpected AssetURI. expected: %v, actual: %v", assetURI, ma.MetaData.URI)
 			}
 		}
-		if len(actual.Tasks) == 0 {
-			t.Error("Tasks is required")
+		for _, ta := range actual.Tasks {
+			if ta.Configuration != "Adaptive Streaming" {
+				t.Errorf("unexpected configuration. expected: %v, actual: %v", "Adaptive Streaming", ta.Configuration)
+			}
 		}
-
 		w.WriteHeader(http.StatusCreated)
 		rawJob := `{"Id":"sample-job-id","Name":"sample-job-name","StartTime":"2017-08-10T02:52:53Z","EndTime":"","LastModified":"2017-08-10T02:52:53Z","Priority":1,"RunningDuration":0.0,"State":0}`
 		fmt.Fprint(w, rawJob)
