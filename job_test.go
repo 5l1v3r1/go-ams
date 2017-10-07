@@ -77,6 +77,34 @@ func TestClient_AddEncodeJob(t *testing.T) {
 	}
 }
 
+func TestClient_AddThumbnailJob(t *testing.T) {
+	assetID := "sample-id"
+	mediaProcessorID := "sample-media-processor-id"
+
+	m := http.NewServeMux()
+	m.HandleFunc("/Jobs", func(w http.ResponseWriter, r *http.Request) {
+		testRequestMethod(t, r, http.MethodPost)
+		testAMSHeader(t, r.Header, true)
+		verifyJobRequest(t, r.Body)
+
+		w.WriteHeader(http.StatusCreated)
+		rawJob := `{"Id":"sample-job-id","Name":"sample-job-name","StartTime":"2017-08-10T02:52:53Z","EndTime":"","LastModified":"2017-08-10T02:52:53Z","Priority":1,"RunningDuration":0.0,"State":0}`
+		fmt.Fprint(w, rawJob)
+	})
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	client := testClient(t, s.URL)
+
+	job, err := client.AddThumbnailJob(context.TODO(), assetID, mediaProcessorID)
+	if err != nil {
+		t.Error(err)
+	}
+	if job == nil {
+		t.Error("return nil job")
+	}
+}
+
 func TestClient_GetOutputMediaAssets(t *testing.T) {
 	jobID := "sample-job-id"
 	expected := []Asset{
