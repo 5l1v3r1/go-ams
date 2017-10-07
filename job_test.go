@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestClient_EncodeAsset(t *testing.T) {
+func TestClient_AddEncodeJob(t *testing.T) {
 	assetID := "sample-id"
 	outputAssetName := "__sample-output-asset-name__"
 	mediaProcessorID := "sample-media-processor-id"
