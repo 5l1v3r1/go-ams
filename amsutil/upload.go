@@ -1,8 +1,10 @@
 package amsutil
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"mime"
 	"os"
 	"path"
@@ -17,6 +19,18 @@ const (
 	uploadPolicyName       = "UploadPolicy"
 	uploadDurationInMinute = 440.0
 )
+
+type multiError struct {
+	errs []error
+}
+
+func (m *multiError) Error() string {
+	messages := make([]string, 0, len(m.errs))
+	for _, err := range m.errs {
+		messages = append(messages, err.Error())
+	}
+	return fmt.Sprintf("multiple error: %s", strings.Join(messages, ","))
+}
 
 type Uploadable interface {
 	Name() string
@@ -34,15 +48,37 @@ func (u *uploadable) Name() string      { return u.name }
 func (u *uploadable) Size() int64       { return u.size }
 func (u *uploadable) Blobs() []ams.Blob { return u.blobs }
 
-func NewUploadble(name string, blob ams.Blob) Uploadable {
+func SplitBlob(blob ams.Blob, chunkSize int64) ([]ams.Blob, error) {
+	size := blob.Size()
+	body, err := ioutil.ReadAll(blob)
+	if err != nil {
+		return nil, errors.Wrap(err, "blob failed to read")
+	}
+	var chunk []byte
+	chunks := make([]ams.Blob, 0, (size+chunkSize-1)/chunkSize)
+	for int64(len(body)) >= chunkSize {
+		chunk, body = body[:chunkSize], body[chunkSize:]
+		chunks = append(chunks, bytes.NewReader(chunk))
+	}
+	if len(body) > 0 {
+		chunks = append(chunks, bytes.NewReader(body))
+	}
+	return chunks, nil
+}
+
+func NewUploadble(name string, blob ams.Blob, chunkSize int64) (Uploadable, error) {
+	blobs, err := SplitBlob(blob, chunkSize)
+	if err != nil {
+		return nil, errors.Wrap(err, "blob failed to split")
+	}
 	return &uploadable{
 		name:  name,
 		size:  blob.Size(),
-		blobs: []ams.Blob{blob},
-	}
+		blobs: blobs,
+	}, nil
 }
 
-func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.Asset, error) {
+func UploadFile(ctx context.Context, client *ams.Client, file *os.File, chunkSize, worker int64) (*ams.Asset, error) {
 	if client == nil {
 		return nil, errors.New("client missing")
 	}
@@ -60,10 +96,15 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File) (*ams.As
 		return nil, errors.Errorf("invalid file type. expected video/*, actual '%v'", mimeType)
 	}
 
-	return Upload(ctx, client, NewUploadble(fblob.Name(), fblob), mimeType)
+	uploadable, err := NewUploadble(fblob.Name(), fblob, chunkSize)
+	if err != nil {
+		return nil, errors.Wrap(err, "uploadable failed to construct")
+	}
+
+	return Upload(ctx, client, uploadable, mimeType, worker)
 }
 
-func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mimeType string) (*ams.Asset, error) {
+func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mimeType string, worker int64) (*ams.Asset, error) {
 	if client == nil {
 		return nil, errors.New("client missing")
 	}
@@ -100,13 +141,38 @@ func Upload(ctx context.Context, client *ams.Client, uploadable Uploadable, mime
 		return nil, errors.Wrapf(err, "upload url build failed")
 	}
 
+	blobs := uploadable.Blobs()
+	blobsSize := len(blobs)
+	jobs := make(chan int, worker)
+	errs := make(chan error, worker)
+
+	for w := int64(0); w < worker; w++ {
+		go func(c context.Context, id int64, in <-chan int, e chan<- error) {
+			for i := range in {
+				blockID := fmt.Sprintf("block-id-%v", i+1)
+				e <- client.PutBlob(c, uploadURL, blobs[i], blockID)
+			}
+		}(ctx, w, jobs, errs)
+	}
+
 	var blockList []string
-	for i, blob := range uploadable.Blobs() {
+	for i := 0; i < blobsSize; i++ {
 		blockID := fmt.Sprintf("block-id-%v", i+1)
-		if err := client.PutBlob(ctx, uploadURL, blob, blockID); err != nil {
-			return nil, errors.Wrap(err, "put blob failed")
-		}
 		blockList = append(blockList, blockID)
+		jobs <- i
+	}
+	close(jobs)
+
+	var es []error
+	for i := 0; i < blobsSize; i++ {
+		err := <-errs
+		if err != nil {
+			es = append(es, err)
+		}
+	}
+
+	if len(es) != 0 {
+		return nil, &multiError{es}
 	}
 
 	if err := client.PutBlockList(ctx, uploadURL, blockList); err != nil {

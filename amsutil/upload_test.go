@@ -20,7 +20,7 @@ func TestUploadFile(t *testing.T) {
 	}
 	defer testFile.Close()
 
-	asset, err := UploadFile(ctx, AMS, testFile)
+	asset, err := UploadFile(ctx, AMS, testFile, 4*1024*1024, 5)
 	if err != nil {
 		t.Errorf("file uploading failed: %v", err)
 	}

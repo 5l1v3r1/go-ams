@@ -22,7 +22,7 @@ func TestEncode(t *testing.T) {
 	}
 	defer f.Close()
 
-	asset, err := UploadFile(ctx, AMS, f)
+	asset, err := UploadFile(ctx, AMS, f, 4*1024*1024, 5)
 	if err != nil {
 		t.Fatalf("file uploading failed: %v", err)
 	}
