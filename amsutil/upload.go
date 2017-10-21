@@ -66,7 +66,7 @@ func SplitBlob(blob ams.Blob, chunkSize int64) ([]ams.Blob, error) {
 	return chunks, nil
 }
 
-func NewUploadble(name string, blob ams.Blob, chunkSize int64) (Uploadable, error) {
+func NewUploadable(name string, blob ams.Blob, chunkSize int64) (Uploadable, error) {
 	blobs, err := SplitBlob(blob, chunkSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "blob failed to split")
@@ -96,7 +96,7 @@ func UploadFile(ctx context.Context, client *ams.Client, file *os.File, chunkSiz
 		return nil, errors.Errorf("invalid file type. expected video/*, actual '%v'", mimeType)
 	}
 
-	uploadable, err := NewUploadble(fblob.Name(), fblob, chunkSize)
+	uploadable, err := NewUploadable(fblob.Name(), fblob, chunkSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "uploadable failed to construct")
 	}
