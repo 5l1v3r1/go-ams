@@ -2,28 +2,16 @@
 
 
 [[projects]]
-  name = "github.com/k0kubun/pp"
-  packages = ["."]
-  revision = "027a6d1765d673d337e687394dbe780dd64e2a1e"
-  version = "v2.3.0"
-
-[[projects]]
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
-  version = "v0.0.9"
-
-[[projects]]
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
   branch = "master"
   name = "github.com/orisano/go-adal"
   packages = ["."]
   revision = "81712b4cce100ced64ab35b7073359cd721e7f11"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/orisano/httpc"
+  packages = ["."]
+  revision = "c80fa830e1b94e3503d2ccb94960705980ccc2b0"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -35,7 +23,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
+  revision = "c73622c77280266305273cb545f54516ced95b93"
 
 [[projects]]
   branch = "master"
@@ -43,15 +31,9 @@
   packages = [".","clientcredentials","internal"]
   revision = "bb50c06baba3d0c76f9d125c0719093e315b5b44"
 
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2959e2c586bee08070c97956ee10215d4d6421184cac7292bf6ad0004a2bc865"
+  inputs-digest = "35b30c6f3e058b7bb346e9f82314115231c2a31b018c34802724f9c27237c20d"
   solver-name = "gps-cdcl"
   solver-version = 1
