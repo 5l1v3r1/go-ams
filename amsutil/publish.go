@@ -46,7 +46,7 @@ func Publish(ctx context.Context, client *ams.Client, assetID string, minutes fl
 		}
 	}()
 
-	startTime := time.Now().Add(-5 * time.Minute)
+	startTime := TimeNow().Add(-5 * time.Minute)
 	locator, err := client.CreateLocator(ctx, accessPolicy.ID, asset.ID, startTime, ams.LocatorOnDemandOrigin)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create locator")
