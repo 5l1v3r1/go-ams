@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/orisano/httpc"
 	"github.com/pkg/errors"
 )
 
@@ -44,7 +45,7 @@ func (c *Client) CreateAssetFile(ctx context.Context, assetID, name, mimeType st
 
 func (c *Client) UpdateAssetFile(ctx context.Context, assetFile *AssetFile) error {
 	endpoint := toFileResource(assetFile.ID)
-	req, err := c.newRequest(ctx, "MERGE", endpoint, withJSON(assetFile))
+	req, err := c.newRequest(ctx, "MERGE", endpoint, httpc.WithJSON(assetFile))
 	if err != nil {
 		return errors.Wrap(err, "request build failed")
 	}

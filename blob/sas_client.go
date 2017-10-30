@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
+	"os"
 	"runtime"
 	"time"
 
@@ -23,7 +23,7 @@ var TimeNow func() time.Time = time.Now
 var DefaultUserAgent = fmt.Sprintf("Go/%s (%s-%s) go-ams.blob", runtime.Version(), runtime.GOARCH, runtime.GOOS)
 
 type SASClient struct {
-	u          *url.URL
+	rb         *httpc.RequestBuilder
 	httpClient *http.Client
 
 	userAgent string
@@ -32,14 +32,6 @@ type SASClient struct {
 }
 
 func NewSASClient(rawurl string, opts ...clientOption) (*SASClient, error) {
-	if len(rawurl) == 0 {
-		return nil, errors.New("missing rawurl")
-	}
-	u, err := url.ParseRequestURI(rawurl)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse url")
-	}
-
 	options := &clientOptions{
 		Client:    http.DefaultClient,
 		UserAgent: DefaultUserAgent,
@@ -50,8 +42,21 @@ func NewSASClient(rawurl string, opts ...clientOption) (*SASClient, error) {
 		opt(options)
 	}
 
+	h := make(http.Header)
+	h.Set("x-ms-version", APIVersion)
+	h.Set("User-Agent", options.UserAgent)
+
+	rb, err := httpc.NewRequestBuilder(rawurl, h)
+	if err != nil {
+		return nil, err
+	}
+
+	if options.Debug {
+		httpc.InjectDebugTransport(options.Client, os.Stderr)
+	}
+
 	return &SASClient{
-		u:          u,
+		rb:         rb,
 		httpClient: options.Client,
 		userAgent:  options.UserAgent,
 		logger:     options.Logger,
@@ -59,12 +64,9 @@ func NewSASClient(rawurl string, opts ...clientOption) (*SASClient, error) {
 	}, nil
 }
 
-func (c *SASClient) defaultHeader() http.Header {
-	h := http.Header{}
-	h.Set("x-ms-version", APIVersion)
-	h.Set("Date", TimeNow().UTC().Format(time.RFC3339))
-	h.Set("User-Agent", c.userAgent)
-	return h
+func withDate(o *httpc.RequestOptions) error {
+	o.Header.Set("Date", TimeNow().UTC().Format(time.RFC3339))
+	return nil
 }
 
 func (c *SASClient) PutBlob(ctx context.Context, blob io.Reader, blockID string) error {
@@ -77,16 +79,11 @@ func (c *SASClient) PutBlob(ctx context.Context, blob io.Reader, blockID string)
 	if len(blockID) == 0 {
 		return errors.New("missing blockID")
 	}
-	header := c.defaultHeader()
-	header.Set("x-ms-blob-type", "BlockBlob")
-
-	params := url.Values{}
-	params.Set("comp", "block")
-	params.Set("blockid", blockID)
-
-	req, err := httpc.NewRequest(ctx, http.MethodPut, c.u.String(),
-		httpc.WithHeader(header),
-		httpc.WithQueries(params),
+	req, err := c.rb.NewRequest(ctx, http.MethodPut, "",
+		withDate,
+		httpc.SetHeaderField("x-ms-blob-type", "BlockBlob"),
+		httpc.AddQuery("comp", "block"),
+		httpc.AddQuery("blockid", blockID),
 		httpc.WithBinary(blob),
 		httpc.EnforceContentLength,
 	)
@@ -99,6 +96,11 @@ func (c *SASClient) PutBlob(ctx context.Context, blob io.Reader, blockID string)
 		return errors.Wrap(err, "failed to http request")
 	}
 	defer resp.Body.Close()
+
+	if got := resp.StatusCode; got != http.StatusCreated {
+		return errors.Errorf("unexpected status code. expected: %v, but got: %v", http.StatusCreated, got)
+	}
+
 	c.logger.Print("[INFO] completed")
 	return nil
 }
@@ -110,8 +112,8 @@ func (c *SASClient) PutBlockList(ctx context.Context, blockList []string) error 
 	if len(blockList) == 0 {
 		return errors.New("missing blockList")
 	}
-	req, err := httpc.NewRequest(ctx, http.MethodPut, c.u.String(),
-		httpc.WithHeader(c.defaultHeader()),
+	req, err := c.rb.NewRequest(ctx, http.MethodPut, "",
+		withDate,
 		httpc.AddQuery("comp", "blocklist"),
 		httpc.WithXML(&BlockList{Blocks: blockList}),
 		httpc.EnforceContentLength,
@@ -125,6 +127,11 @@ func (c *SASClient) PutBlockList(ctx context.Context, blockList []string) error 
 		return errors.Wrap(err, "failed to http request")
 	}
 	defer resp.Body.Close()
+
+	if got := resp.StatusCode; got != http.StatusCreated {
+		return errors.Errorf("unexpected status code. expected: %v, but got: %v", http.StatusCreated, got)
+	}
+
 	c.logger.Print("[INFO] completed")
 	return nil
 }

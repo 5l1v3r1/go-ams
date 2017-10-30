@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/orisano/httpc"
 	"github.com/pkg/errors"
 )
 
@@ -78,9 +79,10 @@ func (c *Client) addJob(ctx context.Context, assetID, mediaProcessorID, configur
 	var out struct {
 		Data Job `json:"d"`
 	}
-	if err := c.post(ctx, jobsEndpoint, params, &out, withOData(true)); err != nil {
-		return nil, err
-	}
+	err = c.post(ctx, jobsEndpoint, params, &out,
+		httpc.SetHeaderField("Content-Type", "application/json;odata=verbose"),
+		httpc.SetHeaderField("Accept", "application/json;odata=verbose"),
+	)
 	return &out.Data, nil
 }
 

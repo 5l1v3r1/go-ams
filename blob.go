@@ -1,54 +1,26 @@
 package ams
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"net/http"
+	"io"
 	"net/url"
-	"os"
-	"text/template"
 
 	"github.com/pkg/errors"
+	ablob "github.com/recruit-tech/go-ams/blob"
 )
 
-type Blob interface {
-	FixedSizeReader
+func (c *Client) newSASClient(rawurl string) (*ablob.SASClient, error) {
+	return ablob.NewSASClient(rawurl,
+		ablob.WithDebug(c.debug),
+		ablob.WithLogger(c.logger),
+		ablob.WithUserAgent(c.userAgent),
+	)
 }
 
-type fileBlob struct {
-	file *os.File
-	stat os.FileInfo
-}
-
-func NewFileBlob(file *os.File) (*fileBlob, error) {
-	if file == nil {
-		return nil, errors.New("missing file")
+func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob io.Reader, blockID string) error {
+	if ctx == nil {
+		return errors.New("missing ctx")
 	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, errors.Wrap(err, "get file stat failed")
-	}
-	return &fileBlob{
-		file: file,
-		stat: stat,
-	}, nil
-}
-
-func (f *fileBlob) Read(p []byte) (int, error) {
-	return f.file.Read(p)
-}
-
-func (f *fileBlob) Size() int64 {
-	return f.stat.Size()
-}
-
-func (f *fileBlob) Name() string {
-	return f.stat.Name()
-}
-
-func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blockID string) error {
 	if uploadURL == nil {
 		return errors.New("missing uploadURL")
 	}
@@ -58,67 +30,26 @@ func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob Blob, blo
 	if len(blockID) == 0 {
 		return errors.New("missing blockID")
 	}
-
-	params := url.Values{}
-	params.Set("comp", "block")
-	params.Set("blockid", buildBlockID(blockID))
-
-	req, err := c.newStorageRequest(ctx, http.MethodPut, *uploadURL,
-		withQuery(params),
-		withCustomHeader("x-ms-blob-type", "BlockBlob"),
-		withContentType("application/octet-stream"),
-		withBody(blob),
-	)
+	sasc, err := c.newSASClient(uploadURL.String())
 	if err != nil {
-		return errors.Wrap(err, "request build failed")
+		return errors.Wrap(err, "failed to construct SASClient")
 	}
-	req.ContentLength = blob.Size()
-
-	c.logger.Printf("[INFO] put blob ...")
-
-	if err := c.doWithClient(http.DefaultClient, req, http.StatusCreated, nil); err != nil {
-		return errors.Wrap(err, "request failed")
-	}
-	c.logger.Printf("[INFO] completed")
-	return nil
+	return sasc.PutBlob(ctx, blob, blockID)
 }
 
 func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList []string) error {
-	params := url.Values{}
-	params.Set("comp", "blocklist")
-
-	blockListXML, err := buildBlockListXML(blockList)
+	if ctx == nil {
+		return errors.New("missing ctx")
+	}
+	if uploadURL == nil {
+		return errors.New("missing uploadURL")
+	}
+	if len(blockList) == 0 {
+		return errors.New("missing blockList")
+	}
+	sasc, err := c.newSASClient(uploadURL.String())
 	if err != nil {
-		return errors.Wrap(err, "block list XML build failed")
+		return errors.Wrap(err, "failed to construct SASClient")
 	}
-	req, err := c.newStorageRequest(ctx, http.MethodPut, *uploadURL, withQuery(params), withBytes(blockListXML))
-	if err != nil {
-		return errors.Wrap(err, "request build failed")
-	}
-
-	c.logger.Printf("[INFO] put block list ...")
-	if err := c.doWithClient(http.DefaultClient, req, http.StatusCreated, nil); err != nil {
-		return errors.Wrap(err, "request failed")
-	}
-	c.logger.Printf("[INFO] completed")
-
-	return nil
-}
-
-var blockListXML *template.Template = template.Must(
-	template.New("blockListXML").
-		Funcs(template.FuncMap{"buildBlockID": buildBlockID}).
-		Parse(`<?xml version="1.0" encoding="utf-8"?><BlockList>{{ range . }}<Latest>{{ . | buildBlockID }}</Latest>{{ end }}</BlockList>`),
-)
-
-func buildBlockID(blockID string) string {
-	return base64.StdEncoding.EncodeToString([]byte(blockID))
-}
-
-func buildBlockListXML(blockList []string) ([]byte, error) {
-	var b bytes.Buffer
-	if err := blockListXML.Execute(&b, blockList); err != nil {
-		return nil, errors.Wrap(err, "template execute failed")
-	}
-	return b.Bytes(), nil
+	return sasc.PutBlockList(ctx, blockList)
 }
