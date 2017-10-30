@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/orisano/httpc"
@@ -138,4 +140,105 @@ func (c *SASClient) PutBlockList(ctx context.Context, blockList []string) error 
 
 	c.logger.Print("[INFO] completed")
 	return nil
+}
+
+type UploadError struct {
+	errs []error
+	m    *sync.Mutex
+}
+
+func newUploadError() *UploadError {
+	return &UploadError{
+		m: new(sync.Mutex),
+	}
+}
+
+func (e *UploadError) add(err error) {
+	if err != nil {
+		e.m.Lock()
+		e.errs = append(e.errs, err)
+		e.m.Unlock()
+	}
+}
+
+func (e *UploadError) Error() string {
+	return fmt.Sprintf("failed to upload: (%d error occurred)", len(e.errs))
+}
+
+func (e *UploadError) Errors() []error {
+	return e.errs
+}
+
+func (c *SASClient) Upload(ctx context.Context, r io.Reader, chunkSize int64, workers uint) (int64, error) {
+	if ctx == nil {
+		return 0, errors.New("missing ctx")
+	}
+	if r == nil {
+		return 0, errors.New("missing r")
+	}
+	if chunkSize <= 0 {
+		return 0, errors.New("chunkSize must be greater than 0")
+	}
+	if workers == 0 {
+		return 0, errors.New("workers must be greater then 0")
+	}
+
+	type job struct {
+		blockID string
+		r       io.Reader
+	}
+
+	jobs := make(chan job, workers)
+	uploadErr := newUploadError()
+	wg := new(sync.WaitGroup)
+	wg.Add(int(workers))
+	for w := uint(0); w < workers; w++ {
+		go func() {
+			for job := range jobs {
+				err := c.PutBlob(ctx, job.r, job.blockID)
+				if err != nil {
+					uploadErr.add(err)
+				}
+			}
+			wg.Done()
+		}()
+	}
+
+	var blockList []string
+	contentLength := int64(0)
+	bi := 0
+	for {
+		bi++
+		b := bytes.NewBuffer(make([]byte, 0, chunkSize))
+		n, err := io.CopyN(b, r, chunkSize)
+		if n == 0 {
+			break
+		}
+		if err != nil {
+			close(jobs)
+			wg.Done()
+			return 0, errors.Wrap(err, "failed to read r")
+		}
+
+		contentLength += n
+		blockID := buildBlockID(bi)
+		blockList = append(blockList, blockID)
+		jobs <- job{blockID, b}
+
+		if n < chunkSize {
+			break
+		}
+	}
+	close(jobs)
+	wg.Done()
+
+	if uploadErr.Errors() != nil {
+		return 0, uploadErr
+	}
+
+	if err := c.PutBlockList(ctx, blockList); err != nil {
+		return 0, errors.Wrap(err, "failed to put blocklist")
+	}
+
+	return contentLength, nil
 }
