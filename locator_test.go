@@ -64,7 +64,7 @@ func TestClient_CreateLocator(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/Locators", func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, http.MethodPost)
-		testAMSHeader(t, r.Header, false)
+		testAMSHeader(t, r, false)
 
 		var params struct {
 			AccessPolicyID string `json:"AccessPolicyId"`

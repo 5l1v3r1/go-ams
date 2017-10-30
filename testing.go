@@ -36,7 +36,7 @@ func testAsset(id, name string) Asset {
 func testJSONHandler(t *testing.T, method string, verbose bool, statusCode int, resp interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, method)
-		testAMSHeader(t, r.Header, verbose)
+		testAMSHeader(t, r, verbose)
 
 		w.WriteHeader(statusCode)
 		if resp != nil {

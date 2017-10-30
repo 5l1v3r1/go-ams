@@ -46,7 +46,7 @@ func TestClient_AddEncodeJob(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/Jobs", func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, http.MethodPost)
-		testAMSHeader(t, r.Header, true)
+		testAMSHeader(t, r, true)
 
 		actual := verifyJobRequest(t, r.Body)
 		for _, ma := range actual.InputMediaAssets {
@@ -84,7 +84,7 @@ func TestClient_AddThumbnailJob(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/Jobs", func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, http.MethodPost)
-		testAMSHeader(t, r.Header, true)
+		testAMSHeader(t, r, true)
 		verifyJobRequest(t, r.Body)
 
 		w.WriteHeader(http.StatusCreated)

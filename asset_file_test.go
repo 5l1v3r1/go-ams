@@ -15,7 +15,7 @@ func TestClient_CreateAssetFile(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/Files", func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, http.MethodPost)
-		testAMSHeader(t, r.Header, false)
+		testAMSHeader(t, r, false)
 
 		var assetFile AssetFile
 		if err := json.NewDecoder(r.Body).Decode(&assetFile); err != nil {
@@ -87,7 +87,7 @@ func TestClient_UpdateAssetFile(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc(fmt.Sprintf("/Files('%v')", expected.ID), func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, "MERGE")
-		testAMSHeader(t, r.Header, false)
+		testAMSHeader(t, r, false)
 
 		var actual AssetFile
 		if err := json.NewDecoder(r.Body).Decode(&actual); err != nil {

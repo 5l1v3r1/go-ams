@@ -32,23 +32,23 @@ func (hc *checker) AssertNot(key, unexpected string) {
 	hc.Match(key, unexpected, func(a, b string) bool { return a != b })
 }
 
-func testAMSHeader(t *testing.T, header http.Header, verbose bool) {
-	hc := checker{t, header}
+func testAMSHeader(t *testing.T, req *http.Request, verbose bool) {
+	hc := checker{t, req.Header}
 	hc.Assert("x-ms-version", APIVersion)
 	hc.Assert("DataServiceVersion", DataServiceVersion)
 	hc.Assert("MaxDataServiceVersion", MaxDataServiceVersion)
+
+	checkContentType := req.Method == http.MethodPost || req.Method == http.MethodPut
 	if verbose {
-		hc.Assert("Content-Type", "application/json;odata=verbose")
+		if checkContentType {
+			hc.Assert("Content-Type", "application/json;odata=verbose")
+		}
 		hc.Assert("Accept", "application/json;odata=verbose")
 	} else {
-		hc.Assert("Content-Type", "application/json")
+		if checkContentType {
+			hc.Assert("Content-Type", "application/json")
+		}
 		hc.Assert("Accept", "application/json")
 	}
 	hc.Match("Authorization", "Bearer ", strings.HasPrefix)
-}
-
-func testStorageHeader(t *testing.T, header http.Header) {
-	hc := checker{t, header}
-	hc.Assert("x-ms-version", StorageAPIVersion)
-	hc.AssertNot("Date", "")
 }

@@ -78,7 +78,7 @@ func TestClient_CreateAsset(t *testing.T) {
 	m := http.NewServeMux()
 	m.HandleFunc("/Assets", func(w http.ResponseWriter, r *http.Request) {
 		testRequestMethod(t, r, http.MethodPost)
-		testAMSHeader(t, r.Header, false)
+		testAMSHeader(t, r, false)
 
 		var asset Asset
 		if err := json.NewDecoder(r.Body).Decode(&asset); err != nil {
