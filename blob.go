@@ -9,7 +9,7 @@ import (
 	ablob "github.com/recruit-tech/go-ams/blob"
 )
 
-func (c *Client) newSASClient(rawurl string) (*ablob.SASClient, error) {
+func (c *Client) NewSASClient(rawurl string) (*ablob.SASClient, error) {
 	return ablob.NewSASClient(rawurl,
 		ablob.WithDebug(c.debug),
 		ablob.WithLogger(c.logger),
@@ -30,7 +30,7 @@ func (c *Client) PutBlob(ctx context.Context, uploadURL *url.URL, blob io.Reader
 	if len(blockID) == 0 {
 		return errors.New("missing blockID")
 	}
-	sasc, err := c.newSASClient(uploadURL.String())
+	sasc, err := c.NewSASClient(uploadURL.String())
 	if err != nil {
 		return errors.Wrap(err, "failed to construct SASClient")
 	}
@@ -47,7 +47,7 @@ func (c *Client) PutBlockList(ctx context.Context, uploadURL *url.URL, blockList
 	if len(blockList) == 0 {
 		return errors.New("missing blockList")
 	}
-	sasc, err := c.newSASClient(uploadURL.String())
+	sasc, err := c.NewSASClient(uploadURL.String())
 	if err != nil {
 		return errors.Wrap(err, "failed to construct SASClient")
 	}
