@@ -19,7 +19,6 @@ const (
 	APIVersion = "2017-04-17"
 )
 
-var TimeNow func() time.Time = time.Now
 var DefaultUserAgent = fmt.Sprintf("Go/%s (%s-%s) go-ams.blob", runtime.Version(), runtime.GOARCH, runtime.GOOS)
 
 type SASClient struct {
@@ -29,6 +28,8 @@ type SASClient struct {
 	userAgent string
 	logger    *log.Logger
 	debug     bool
+
+	TimeNow func() time.Time
 }
 
 func NewSASClient(rawurl string, opts ...clientOption) (*SASClient, error) {
@@ -61,12 +62,15 @@ func NewSASClient(rawurl string, opts ...clientOption) (*SASClient, error) {
 		userAgent:  options.UserAgent,
 		logger:     options.Logger,
 		debug:      options.Debug,
+		TimeNow:    time.Now,
 	}, nil
 }
 
-func withDate(o *httpc.RequestOptions) error {
-	o.Header.Set("Date", TimeNow().UTC().Format(time.RFC3339))
-	return nil
+func withDate(t time.Time) httpc.RequestOption {
+	return func(o *httpc.RequestOptions) error {
+		o.Header.Set("Date", t.UTC().Format(time.RFC3339))
+		return nil
+	}
 }
 
 func (c *SASClient) PutBlob(ctx context.Context, blob io.Reader, blockID string) error {
@@ -80,7 +84,7 @@ func (c *SASClient) PutBlob(ctx context.Context, blob io.Reader, blockID string)
 		return errors.New("missing blockID")
 	}
 	req, err := c.rb.NewRequest(ctx, http.MethodPut, "",
-		withDate,
+		withDate(c.TimeNow()),
 		httpc.SetHeaderField("x-ms-blob-type", "BlockBlob"),
 		httpc.AddQuery("comp", "block"),
 		httpc.AddQuery("blockid", blockID),
@@ -113,7 +117,7 @@ func (c *SASClient) PutBlockList(ctx context.Context, blockList []string) error 
 		return errors.New("missing blockList")
 	}
 	req, err := c.rb.NewRequest(ctx, http.MethodPut, "",
-		withDate,
+		withDate(c.TimeNow()),
 		httpc.AddQuery("comp", "blocklist"),
 		httpc.WithXML(&BlockList{Blocks: blockList}),
 		httpc.EnforceContentLength,
