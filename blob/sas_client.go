@@ -211,13 +211,13 @@ func (c *SASClient) Upload(ctx context.Context, r io.Reader, chunkSize int64, wo
 		bi++
 		b := bytes.NewBuffer(make([]byte, 0, chunkSize))
 		n, err := io.CopyN(b, r, chunkSize)
+		if err != nil && err != io.EOF {
+			close(jobs)
+			wg.Wait()
+			return 0, errors.Wrap(err, "failed to read r")
+		}
 		if n == 0 {
 			break
-		}
-		if err != nil {
-			close(jobs)
-			wg.Done()
-			return 0, errors.Wrap(err, "failed to read r")
 		}
 
 		contentLength += n
@@ -230,7 +230,7 @@ func (c *SASClient) Upload(ctx context.Context, r io.Reader, chunkSize int64, wo
 		}
 	}
 	close(jobs)
-	wg.Done()
+	wg.Wait()
 
 	if uploadErr.Errors() != nil {
 		return 0, uploadErr
