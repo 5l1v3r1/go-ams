@@ -36,7 +36,7 @@ type Locator struct {
 func (l *Locator) ToUploadURL(name string) (*url.URL, error) {
 	uploadURL, err := url.ParseRequestURI(l.Path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parse url failed: %s", l.Path)
+		return nil, errors.Wrap(err, "failed to parse url")
 	}
 	uploadURL.Path = path.Join(uploadURL.Path, name)
 	return uploadURL, nil
