@@ -8,6 +8,9 @@ import (
 )
 
 func Encode(ctx context.Context, client *ams.Client, assetID, mediaProcessorID, configuration string) ([]ams.Asset, *ams.Job, error) {
+	if ctx == nil {
+		return nil, nil, errors.New("missing ctx")
+	}
 	if client == nil {
 		return nil, nil, errors.New("missing client")
 	}

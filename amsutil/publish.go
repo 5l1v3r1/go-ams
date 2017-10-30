@@ -16,11 +16,17 @@ const (
 )
 
 func Publish(ctx context.Context, client *ams.Client, assetID string, minutes float64) (string, error) {
+	if ctx == nil {
+		return "", errors.New("missing ctx")
+	}
 	if client == nil {
 		return "", errors.New("missing client")
 	}
 	if len(assetID) == 0 {
 		return "", errors.New("missing assetID")
+	}
+	if minutes <= 0 {
+		return "", errors.New("minutes must be greater than 0")
 	}
 
 	asset, err := client.GetAsset(ctx, assetID)
