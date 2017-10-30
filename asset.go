@@ -103,7 +103,7 @@ func (c *Client) DeleteAsset(ctx context.Context, assetID string) error {
 	endpoint := toAssetResource(assetID)
 	req, err := c.newRequest(ctx, http.MethodDelete, endpoint)
 	if err != nil {
-		return errors.Wrap(err, "request build failed")
+		return errors.Wrap(err, "failed to construct request")
 	}
 
 	c.logger.Printf("[INFO] delete asset[#%s] ...")
