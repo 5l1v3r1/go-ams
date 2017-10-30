@@ -58,7 +58,7 @@ func (c *Client) addJob(ctx context.Context, assetID, mediaProcessorID, configur
 	taskName := fmt.Sprintf("Task - Asset %s", assetID)
 	taskBodyXML, err := xml.Marshal(taskBody)
 	if err != nil {
-		return nil, errors.Wrap(err, "taskBody xml marshal failed")
+		return nil, errors.Wrap(err, "failed to xml.Marshal taskBody")
 	}
 
 	params := map[string]interface{}{

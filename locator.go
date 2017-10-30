@@ -64,11 +64,11 @@ func (c *Client) DeleteLocator(ctx context.Context, locatorID string) error {
 	endpoint := toLocatorResource(locatorID)
 	req, err := c.newRequest(ctx, http.MethodDelete, endpoint)
 	if err != nil {
-		return errors.Wrap(err, "request build failed")
+		return errors.Wrap(err, "failed to construct request")
 	}
 	c.logger.Printf("[INFO] delete locator #%s ...", locatorID)
 	if err := c.do(req, http.StatusNoContent, nil); err != nil {
-		return errors.Wrap(err, "request failed")
+		return errors.Wrap(err, "failed to request")
 	}
 	c.logger.Printf("[INFO] completed")
 	return nil
