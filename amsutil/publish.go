@@ -25,14 +25,14 @@ func Publish(ctx context.Context, client *ams.Client, assetID string, minutes fl
 
 	asset, err := client.GetAsset(ctx, assetID)
 	if err != nil {
-		return "", errors.Wrapf(err, "get asset failed. assetID='%s'", assetID)
+		return "", errors.Wrapf(err, "failed to get asset. assetID='%v'", assetID)
 	}
 
 	success := false
 
 	accessPolicy, err := client.CreateAccessPolicy(ctx, publishAccessPolicyName, minutes, ams.PermissionRead)
 	if err != nil {
-		return "", errors.Wrap(err, "create access policy failed")
+		return "", errors.Wrap(err, "failed to create access policy")
 	}
 	defer func() {
 		if !success {
@@ -43,7 +43,7 @@ func Publish(ctx context.Context, client *ams.Client, assetID string, minutes fl
 	startTime := time.Now().Add(-5 * time.Minute)
 	locator, err := client.CreateLocator(ctx, accessPolicy.ID, asset.ID, startTime, ams.LocatorOnDemandOrigin)
 	if err != nil {
-		return "", errors.Wrap(err, "create locator failed")
+		return "", errors.Wrap(err, "failed to create locator")
 	}
 	defer func() {
 		if !success {
@@ -53,7 +53,7 @@ func Publish(ctx context.Context, client *ams.Client, assetID string, minutes fl
 
 	assetFiles, err := client.GetAssetFiles(ctx, asset.ID)
 	if err != nil {
-		return "", errors.Wrap(err, "get asset files failed")
+		return "", errors.Wrap(err, "failed to get asset files")
 	}
 
 	if len(assetFiles) == 0 {
@@ -64,7 +64,7 @@ func Publish(ctx context.Context, client *ams.Client, assetID string, minutes fl
 
 	u, err := url.ParseRequestURI(locator.Path)
 	if err != nil {
-		return "", errors.Wrapf(err, "locator path parse failed. path='%s'", locator.Path)
+		return "", errors.Wrapf(err, "failed to parse locator path")
 	}
 
 	if manifest != nil {

@@ -23,17 +23,17 @@ func Encode(ctx context.Context, client *ams.Client, assetID, mediaProcessorID, 
 
 	asset, err := client.GetAsset(ctx, assetID)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "get asset failed. assetID='%s'", assetID)
+		return nil, nil, errors.Wrapf(err, "failed to get asset. assetID='%v'", assetID)
 	}
 
 	job, err := client.AddEncodeJob(ctx, asset.ID, mediaProcessorID, "")
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "encode asset failed")
+		return nil, nil, errors.Wrapf(err, "failed to encode asset. assetID='%v'", asset.ID)
 	}
 
 	outputMediaAssets, err := client.GetOutputMediaAssets(ctx, job.ID)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "get output media assets failed")
+		return nil, nil, errors.Wrapf(err, "failed to get output media assets. jobID='%v'", job.ID)
 	}
 
 	return outputMediaAssets, job, nil
