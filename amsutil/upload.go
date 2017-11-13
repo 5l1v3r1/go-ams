@@ -39,6 +39,16 @@ func (u *uploadable) Name() string {
 	return u.name
 }
 
+func NewUploadable(name string, r io.Reader) (Uploadable, error) {
+	if r == nil {
+		return nil, errors.New("missing r")
+	}
+	return &uploadable{
+		r:    r,
+		name: name,
+	}, nil
+}
+
 func NewUploadableFile(file *os.File) (Uploadable, error) {
 	if file == nil {
 		return nil, errors.New("missing file")
