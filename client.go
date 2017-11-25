@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -123,7 +124,10 @@ func (c *Client) do(req *http.Request, expectedCode int, out interface{}) error 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if got := resp.StatusCode; got != expectedCode {
 		return errors.Errorf("unexpected status code. expected: %v, but got: %v", expectedCode, got)
